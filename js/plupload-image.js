@@ -1,164 +1,127 @@
-jQuery( document ).ready( function($)
+jQuery( document ).ready( function( $ )
 {
-	//Load loading and error images
-	for(x in rwmb_plupload_status_icons)
+	// Hide "Uploaded files" title if there are no files uploaded after deleting files
+	$( '.rwmb-images' ).on( 'click', '.rwmb-delete-file', function()
 	{
-		$('<img />')
-			.load(
-				function(){
-					$('body').append( $(this) );
-				}
-			)
-			.hide()
-			.attr('src', rwmb_plupload_status_icons[x]);	
-	};
+		// Check if we need to show drop target
+		var $dragndrop = $( this ).parents( '.rwmb-images' ).siblings( '.rwmb-drag-drop' );
+
+		// After delete files, show the Drag & Drop section
+		$dragndrop.removeClass('hidden');
+	} );
 	
-	// Object containing all the plupload uploaders
-	var 
-		rwmb_image_uploaders	= {},
-		hundredMB				= null,
-		max						= null
-	;
-	// Hide "Uploaded files" title as long as there are no files uploaded
-	if ( 1 == $( '.rwmb-uploaded' ).children().length )
-		$( '.rwmb-uploaded-title' ).addClass( 'hidden' );
-	// Check on mouseenter & -leave if we got files and add the "Uploaded files" title
-	jQuery( '.rwmb-drag-drop' ).bind( 
-		'mouseenter mouseleave', 
-		function() 
-		{
-			if ( 1 < $( '.rwmb-uploaded' ).children().length )
-				$( '.rwmb-uploaded-title' ).removeClass( 'hidden' );
-		}
-	);
-
-	// Using all the image prefixes
-	$( 'input:hidden.rwmb-image-prefix' ).each( function() 
+	$('.rwmb-drag-drop').each(function() 
 	{
-		prefix = $( this ).val();	
-		// Adding container, browser button and drag ang drop area
-		rwmb_plupload_init = $.extend( 
+		//Declare vars
+		var $dropArea = $( this ),
+			$imageList = $dropArea.siblings( '.rwmb-uploaded' ),
+			uploaderData = $dropArea.data( 'js_options' ),
+			rwmbUploader = {};
+			
+		//Extend uploaderData
+		uploaderData.multipart_params = $.extend(
 			{
-				container:		prefix + '-container',
-				browse_button:	prefix + '-browse-button',
-				drop_element:	prefix + '-dragdrop'				
-			},
-			rwmb_plupload_defaults 
+				_ajax_nonce	:  $dropArea.data( 'upload_nonce' ),
+				post_id 	: $( '#post_ID' ).val()
+			},	
+			uploaderData.multipart_params
 		);
-		// Add field_id to the ajax call
-		$.extend( 
-			rwmb_plupload_init.multipart_params, 
-			{
-				field_id:	prefix
-			}
-		);
-		// Create new uploader
-		rwmb_image_uploaders[ prefix ] = new plupload.Uploader( rwmb_plupload_init );
-		rwmb_image_uploaders[ prefix ].init();
-		//
-		rwmb_image_uploaders[ prefix ].bind( 
-			'FilesAdded', 
-			function( up, files )
-			{
-				hundredMB	= 100 * 1024 * 1024, 
-				max			= parseInt( up.settings.max_file_size, 10 );
-				plupload.each(
-					files, 
-					function( file )
-					{
-						template =  $( '#' + up.settings.container ).find( 'li.rwmb-image-template' );
-						template
-							.clone( true )
-							.removeClass( 'hidden' )
-							.removeClass( 'rwmb-image-template' )
-							.find('img.rwmb-image')
-							.attr('id',file.id)
-							.attr('src', rwmb_plupload_status_icons['loading'])
-							.end()
-							.insertBefore(template);	
-						if ( file.size >= max )
-						{
-							$( 'img#' + file.id )
-								.attr('src', rwmb_plupload_status_icons['error'])
-								.closest('li')
-								.delay(1600)
-								.fadeOut(
-									'slow', 
-									function() 
-									{
-										$(this).remove();
-									}
-								);
-						}
-					} 
-				);
-				up.refresh();
-				up.start();
-			}
-		);
+		
+		//Create uploader
+		rwmbUploader = new plupload.Uploader( uploaderData );
+		rwmbUploader.init();
+		
+		//Add files
+		rwmbUploader.bind( 'FilesAdded', function( up, files ) 
+		{
+			var maxFileUploads = $imageList.data('max_file_uploads'),
+				uploaded = $imageList.children().length,
+				msg = 'You may only upload ' + maxFileUploads + ' file';
 
-		rwmb_image_uploaders[ prefix ].bind(
-			'Error', 
-			function( up, e ) 
+			if ( maxFileUploads > 1 )
+				msg += 's';
+				
+			// Remove files from queue if exceed max file uploads
+			if ( maxFileUploads > 0  && ( uploaded + files.length ) > maxFileUploads )
 			{
-				template =  $( "#" + up.settings.container ).find( 'li.rwmb-image-template' );
-				template
-					.clone(true)
-					.removeClass('hidden')
-					.removeClass('rwmb-image-template')
-					.find('img.rwmb-image')
-					.attr('src', rwmb_plupload_status_icons['error'])
-					.end()
-					.insertBefore(template)
-					.delay(1600)
-					.fadeOut(
-						'slow', 
-						function() 
-						{
-							$(this).remove();
-						}
-					);	
-				up.removeFile(e.file);
+				if( uploaded < maxFileUploads ){
+					var diff = maxFileUploads - uploaded;
+					up.splice( diff - 1, files.length - diff );
+					files = up.files;
+				}
+				alert( msg );				
 			}
-		);
+			
+			// Hide drag & drop section if reach max file uploads
+			if ( ( uploaded + files.length ) >= maxFileUploads ) $dropArea.addClass( 'hidden' );
 
-		rwmb_image_uploaders[ prefix ].bind(
-			'FileUploaded', 
-			function( up, file, response ) 
+			max = parseInt( up.settings.max_file_size, 10 );
+
+			// Upload files
+			plupload.each( files, function( file )
 			{
-				response_xml = $.parseXML( response.response );
-				res = wpAjax.parseAjaxResponse( response_xml, 'ajax-response' );
-				if ( false === res.errors )
-				{
-					res		= res.responses[0];
-					img_id	= res.data;
-					img_src	= res.supplemental.thumbnail;
-					img_edit = res.supplemental.edit_link;
-					$('img#'+file.id)
-						.attr('src',img_src)
-						.siblings('div.rwmb-image-bar')
-						.removeClass('hidden')
-						.find('a.rwmb-edit-file')
-						.attr('href',img_edit)
-						.siblings('a.rwmb-delete-file')
-						.attr('rel',img_id)
-						.closest('li')
-						.attr('id','item_' + img_id);
-				}
-				else
-				{
-					$('img#'+file.id)
-						.attr('src', rwmb_plupload_status_icons[loading])
-						.closest('li')
-						.delay(1600)
-						.fadeOut(
-							'slow', 
-							function() 
-							{
-								$(this).remove();
-							}
-						);
-				}
-			});
+				addLoading( up, file, $imageList );
+				addThrobber( file );
+				if ( file.size >= max )
+					removeError( file );
+			} );
+			up.refresh();
+			up.start();
+			
+		} );
+		
+		rwmbUploader.bind( 'Error', function( up, e )
+		{
+			addLoading( up, e.file, $imageList );
+			removeError( e.file );
+			up.removeFile( e.file );
+		} );
+		
+		rwmbUploader.bind( 'FileUploaded', function( up, file, response )
+		{
+			var res = wpAjax.parseAjaxResponse( $.parseXML( response.response ), 'ajax-response' );
+			false === res.errors ? $( 'li#' + file.id ).replaceWith( res.responses[0].data ) : removeError( file );
+		} );
 	});
-});
+
+	/**
+	 * Helper functions
+	 */
+
+	/**
+	 * Removes li element if there is an error with the file
+	 *
+	 * @return void
+	 */
+	function removeError( file )
+	{
+		$( 'li#' + file.id )
+			.addClass( 'rwmb-image-error' )
+			.delay( 1600 )
+			.fadeOut( 'slow', function()
+			{
+				$( this ).remove();
+			}
+		);
+	}
+
+	/**
+	 * Adds loading li element
+	 *
+	 * @return void
+	 */
+	function addLoading( up, file, $ul )
+	{
+		$ul.removeClass('hidden').append( "<li id='" + file.id + "'><div class='rwmb-image-uploading-bar'></div><div id='" + file.id + "-throbber' class='rwmb-image-uploading-status'></div></li>" );
+	}
+
+	/**
+	 * Adds loading throbber while waiting for a response
+	 *
+	 * @return void
+	 */
+	function addThrobber( file )
+	{
+		$( '#' + file.id + '-throbber' ).html( "<img class='rwmb-loader' height='64' width='64' src='" + RWMB.url + "img/loader.gif'/>" );
+	}
+} );

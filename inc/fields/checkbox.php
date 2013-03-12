@@ -1,24 +1,11 @@
 <?php
+// Prevent loading this file directly
+defined( 'ABSPATH' ) || exit;
 
-if ( ! class_exists( 'RWMB_Checkbox_Field' ) ) 
+if ( ! class_exists( 'RWMB_Checkbox_Field' ) )
 {
-	class RWMB_Checkbox_Field 
+	class RWMB_Checkbox_Field
 	{
-
-		/**
-		 * Get field end HTML
-		 *
-		 * @param string $end_html
-		 * @param mixed  $meta
-		 * @param array  $field
-		 *
-		 * @return string
-		 */
-		static function end_html( $end_html, $meta, $field )
-		{
-			return " <span class='description'>{$field['desc']}</span></div>";
-		}
-
 		/**
 		 * Get field HTML
 		 *
@@ -30,12 +17,12 @@ if ( ! class_exists( 'RWMB_Checkbox_Field' ) )
 		 */
 		static function html( $html, $meta, $field )
 		{
-			$checked = checked( ! empty( $meta ), true, false );
-			$name    = " name='{$field['id']}'";
-			$id      = " id='{$field['id']}'";
-			$html    = "<input type='checkbox' class='rwmb-checkbox'{$name}{$id}{$checked} />";
-
-			return $html;
+			return sprintf(
+				'<input type="checkbox" class="rwmb-checkbox" name="%s" id="%s" value="1" %s />',
+				$field['field_name'],
+				$field['id'],
+				checked( !empty( $meta ), 1, false )
+			);
 		}
 
 		/**
@@ -51,7 +38,7 @@ if ( ! class_exists( 'RWMB_Checkbox_Field' ) )
 		 *
 		 * @return int
 		 */
-		static function value( $new, $old, $post_id, $field ) 
+		static function value( $new, $old, $post_id, $field )
 		{
 			return empty( $new ) ? 0 : 1;
 		}

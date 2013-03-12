@@ -1,17 +1,28 @@
-// JavaScript Document
-jQuery(document).ready(function($) {
-	$("ul.rw-taxonomy-tree li input:checkbox").live("change",
-		function() {
-			childList = $(this).siblings('ul.rw-taxonomy-tree');
-			if ($(this).is(':checked')) {
-				childList.removeClass("hidden").find('li').each(function(){
-					if(!$(this).parent().hasClass('hidden')){
-						$(this).children('input:checkbox').removeAttr('disabled');
-					}
-				});
-			} else {
-				childList.addClass("hidden").find('li input:checkbox').attr('disabled', true);
-			}
+jQuery( document ).ready( function( $ )
+{
+	$( '.rw-taxonomy-tree input:checkbox' ).change( function()
+	{
+		var $this = $( this ),
+			$childList = $this.parent().siblings( '.rw-taxonomy-tree' );
+		if ( $this.is( ':checked' ) )
+			$childList.removeClass( 'hidden' );
+		else
+		{
+			$( 'input', $childList ).removeAttr( 'checked' );
+			$childList.addClass( 'hidden' );
 		}
-	);
-});
+	} );
+
+	$( '.rw-taxonomy-tree select' ).change( function()
+	{
+		var $this = $( this ),
+			$childList = $this.parent().find( 'div.rw-taxonomy-tree' ),
+			$value = $this.val();
+		$childList.removeClass( 'active' ).addClass( 'disabled' ).find( 'select' ).each( function()
+		{
+			$( this ).val( $( 'options:first', this ).val() ).attr( "disabled", "disabled" )
+		} );
+		$childList.filter( '#rwmb-taxonomy-' + $value ).removeClass( 'disabled' ).addClass( 'active' ).children( 'select' ).removeAttr( 'disabled' );
+
+	} );
+} );

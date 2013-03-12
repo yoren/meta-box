@@ -1,4 +1,6 @@
 <?php
+// Prevent loading this file directly
+defined( 'ABSPATH' ) || exit;
 
 if ( ! class_exists( 'RWMB_Slider_Field' ) )
 {
@@ -9,12 +11,12 @@ if ( ! class_exists( 'RWMB_Slider_Field' ) )
 		 *
 		 * @return void
 		 */
-		static function admin_print_styles()
+		static function admin_enqueue_scripts()
 		{
-			wp_register_style( 'jquery-ui-core', RWMB_CSS_URL . 'libs/jquery.ui.core.css', array(), '1.8.16' );
-			wp_register_style( 'jquery-ui-theme', RWMB_CSS_URL . 'libs/jquery.ui.theme.css', array(), '1.8.16' );
+			$url = RWMB_CSS_URL . 'jqueryui';
+			wp_enqueue_style( 'jquery-ui-core', "{$url}/jquery.ui.core.css", array(), '1.8.17' );
+			wp_enqueue_style( 'jquery-ui-theme', "{$url}/jquery.ui.theme.css", array(), '1.8.17' );
 
-			wp_enqueue_script( 'jquery-ui-slider', '', array( 'jquery-ui-core' ), '1.8.16', true );
 			wp_enqueue_script( 'rwmb-slider', RWMB_JS_URL . 'slider.js', array( 'jquery-ui-slider' ), RWMB_VER, true );
 		}
 
@@ -29,18 +31,16 @@ if ( ! class_exists( 'RWMB_Slider_Field' ) )
 		 */
 		static function html( $html, $meta, $field )
 		{
-			$id	     = " id='{$field['id']}'";
-			$name    = " name='{$field['id']}'";
-			$val     = " value='{$meta}'";
-			$for     = " for='{$field['id']}'";
-			$format	 = " rel='{$field['format']}'";
-			$html   .= "
-				<div class='clearfix'>
-					<div class='rwmb-slider'{$format}{$id}></div>
-					<input type='hidden'{$name}{$val} />
-				</div>";
-
-			return $html;
+			return sprintf(
+				'<div class="clearfix">
+					<div class="rwmb-slider" rel="%s" id="%s"></div>
+					<input type="hidden" name="%s" value="%s" />
+				</div>',
+				$field['format'],
+				$field['id'],
+				$field['field_name'],
+				$meta
+			);
 		}
 	}
 }

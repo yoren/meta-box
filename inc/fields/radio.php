@@ -1,8 +1,10 @@
 <?php
+// Prevent loading this file directly
+defined( 'ABSPATH' ) || exit;
 
-if ( ! class_exists( 'RWMB_Radio_Field' ) ) 
+if ( ! class_exists( 'RWMB_Radio_Field' ) )
 {
-	class RWMB_Radio_Field 
+	class RWMB_Radio_Field
 	{
 		/**
 		 * Get field HTML
@@ -13,15 +15,20 @@ if ( ! class_exists( 'RWMB_Radio_Field' ) )
 		 *
 		 * @return string
 		 */
-		static function html( $html, $meta, $field ) 
+		static function html( $html, $meta, $field )
 		{
 			$html = '';
-			foreach ( $field['options'] as $key => $value ) 
+			$tpl = '<label><input type="radio" class="rwmb-radio" name="%s" value="%s" %s /> %s</label>';
+
+			foreach ( $field['options'] as $value => $label )
 			{
-				$checked = checked( $meta, $key, false );
-				$name    = " name='{$field['id']}'";
-				$val     = " value='{$key}'";
-				$html   .= "<input type='radio' class='rwmb-radio'{$name}{$val}{$checked} /> {$value}";
+				$html .= sprintf(
+					$tpl,
+					$field['field_name'],
+					$value,
+					checked( $value, $meta, false ),
+					$label
+				);
 			}
 
 			return $html;

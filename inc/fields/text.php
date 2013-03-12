@@ -1,8 +1,10 @@
 <?php
+// Prevent loading this file directly
+defined( 'ABSPATH' ) || exit;
 
-if ( ! class_exists( 'RWMB_Text_Field' ) ) 
+if ( ! class_exists( 'RWMB_Text_Field' ) )
 {
-	class RWMB_Text_Field 
+	class RWMB_Text_Field
 	{
 		/**
 		 * Get field HTML
@@ -13,14 +15,30 @@ if ( ! class_exists( 'RWMB_Text_Field' ) )
 		 *
 		 * @return string
 		 */
-		static function html( $html, $meta, $field ) 
+		static function html( $html, $meta, $field )
 		{
-			$val   = " value='{$meta}'";
-			$name  = " name='{$field['id']}'";
-			$id    = " id='{$field['id']}'";
-			$html .= "<input type='text' class='rwmb-text'{$name}{$id}{$val} size='30' />";
+			return sprintf(
+				'<input type="text" class="rwmb-text" name="%s" id="%s" value="%s" size="%s" />',
+				$field['field_name'],
+				$field['id'],
+				$meta,
+				$field['size']
+			);
+		}
 
-			return $html;
+		/**
+		 * Normalize parameters for field
+		 *
+		 * @param array $field
+		 *
+		 * @return array
+		 */
+		static function normalize_field( $field )
+		{
+			$field = wp_parse_args( $field, array(
+				'size' => 30,
+			) );
+			return $field;
 		}
 	}
 }
