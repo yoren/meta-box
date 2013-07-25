@@ -29,7 +29,7 @@ function rwmb_meta_shortcode( $atts )
 	$meta = rwmb_meta( $atts['meta_key'], $atts, $atts['post_id'] );
 
 	// Get uploaded files info
-	if ( 'file' == $atts['type'] )
+	if ( in_array( $atts['type'], array( 'file', 'file_advanced' ) ) )
 	{
 		$content = '<ul>';
 		foreach ( $meta as $file )
@@ -45,7 +45,7 @@ function rwmb_meta_shortcode( $atts )
 	}
 
 	// Get uploaded images info
-	elseif ( in_array( $atts['type'], array( 'image', 'plupload_image', 'thickbox_image' ) ) )
+	elseif ( in_array( $atts['type'], array( 'image', 'plupload_image', 'thickbox_image', 'image_advanced' ) ) )
 	{
 		$content = '<ul>';
 		foreach ( $meta as $image )
@@ -78,7 +78,6 @@ function rwmb_meta_shortcode( $atts )
 	// Get post terms
 	elseif ( 'taxonomy' == $atts['type'] )
 	{
-
 		$content = '<ul>';
 		foreach ( $meta as $term )
 		{
@@ -124,12 +123,12 @@ function rwmb_meta( $key, $args = array(), $post_id = null )
 	) );
 
 	// Set 'multiple' for fields based on 'type'
-	$args['multiple'] = in_array( $args['type'], array( 'checkbox_list', 'file', 'image', 'plupload_image', 'thickbox_image' ) );
+	$args['multiple'] = in_array( $args['type'], array( 'checkbox_list', 'file', 'file_advanced', 'image', 'image_advanced', 'plupload_image', 'thickbox_image' ) );
 
 	$meta = get_post_meta( $post_id, $key, !$args['multiple'] );
 
 	// Get uploaded files info
-	if ( 'file' == $args['type'] )
+	if ( in_array( $args['type'], array( 'file', 'file_advanced' ) ) )
 	{
 		if ( is_array( $meta ) && !empty( $meta ) )
 		{
@@ -143,21 +142,10 @@ function rwmb_meta( $key, $args = array(), $post_id = null )
 	}
 
 	// Get uploaded images info
-	elseif ( in_array( $args['type'], array( 'image', 'plupload_image', 'thickbox_image' ) ) )
+	elseif ( in_array( $args['type'], array( 'image', 'plupload_image', 'thickbox_image', 'image_advanced' ) ) )
 	{
 		if ( is_array( $meta ) && !empty( $meta ) )
 		{
-			global $wpdb;
-			$meta = implode( ',', $meta );
-
-			// Re-arrange images with 'menu_order'
-			$meta = $wpdb->get_col( "
-				SELECT ID FROM {$wpdb->posts}
-				WHERE post_type = 'attachment'
-				AND ID in ({$meta})
-				ORDER BY menu_order ASC
-			" );
-
 			$images = array();
 			foreach ( $meta as $id )
 			{
@@ -167,13 +155,38 @@ function rwmb_meta( $key, $args = array(), $post_id = null )
 		}
 	}
 
+	// Get terms
+	elseif ( 'taxonomy_advanced' == $args['type'] )
+	{
+		if ( !empty( $args['taxonomy'] ) )
+		{
+			$term_ids = array_map( 'intval', array_filter( explode( ',', $meta . ',' ) ) );
+
+			$meta = array();
+			foreach ( $term_ids as $term_id )
+			{
+				$meta[] = get_term( $term_id, $args['taxonomy'] );
+			}
+		}
+		else
+		{
+			$meta = array();
+		}
+	}
+
 	// Get post terms
 	elseif ( 'taxonomy' == $args['type'] )
 	{
 		$meta = empty( $args['taxonomy'] ) ? array() : wp_get_post_terms( $post_id, $args['taxonomy'] );
 	}
 
-	return apply_filters( __FUNCTION__, $meta );
+	// Get map
+	elseif ( 'map' == $args['type'] )
+	{
+		$meta = rwmb_meta_map( $key, $args, $post_id );
+	}
+
+	return apply_filters( __FUNCTION__, $meta, $key, $args, $post_id );
 }
 
 /**
@@ -187,6 +200,7 @@ function rwmb_file_info( $id )
 {
 	$path = get_attached_file( $id );
 	return array(
+		'ID'    => $id,
 		'name'  => basename( $path ),
 		'path'  => $path,
 		'url'   => wp_get_attachment_url( $id ),
@@ -215,6 +229,7 @@ function rwmb_image_info( $id, $args = array() )
 	$attachment = &get_post( $id );
 	$path = get_attached_file( $id );
 	return array(
+		'ID'          => $id,
 		'name'        => basename( $path ),
 		'path'        => $path,
 		'url'         => $img_src[0],
@@ -226,4 +241,102 @@ function rwmb_image_info( $id, $args = array() )
 		'description' => $attachment->post_content,
 		'alt'         => get_post_meta( $id, '_wp_attachment_image_alt', true ),
 	);
+}
+
+/**
+ * Display map using Google API
+ *
+ * @param  string   $key     Meta key
+ * @param  array    $args    Map parameter
+ * @param  int|null $post_id Post ID
+ *
+ * @return string
+ */
+function rwmb_meta_map( $key, $args = array(), $post_id = null )
+{
+	$post_id = empty( $post_id ) ? get_the_ID() : $post_id;
+	$loc = get_post_meta( $post_id, $key, true );
+	if ( !$loc )
+		return '';
+
+	$parts = array_map( 'trim', explode( ',', $loc ) );
+
+	// No zoom entered, set it to 14 by default
+	if ( count( $parts ) < 3 )
+		$parts[2] = 14;
+
+	// Map parameters
+	$args = wp_parse_args( $args, array(
+		'width'        => 640,
+		'height'       => 480,
+		'zoom'         => $parts[2], // Default to 'zoom' level set in admin, but can be overwritten
+		'marker'       => true,      // Display marker?
+		'marker_title' => '',        // Marker title, when hover
+		'info_window'  => '',        // Content of info window (when click on marker). HTML allowed
+	) );
+
+	// Counter to display multiple maps on same page
+	static $counter = 0;
+
+	$html = sprintf(
+		'<div id="rwmb-map-canvas-%d" style="width:%s;height:%s"></div>',
+		$counter,
+		$args['width'] . 'px',
+		$args['height'] . 'px'
+	);
+	$html .= '<script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>';
+	$html .= '<script>
+		(function()
+		{
+			function initialize()
+			{
+	';
+
+	$html .= sprintf( '
+		var center = new google.maps.LatLng( %s, %s ),
+			mapOptions = {
+				center: center,
+				zoom: %d,
+				mapTypeId: google.maps.MapTypeId.ROADMAP
+			},
+			map = new google.maps.Map( document.getElementById( "rwmb-map-canvas-%d" ), mapOptions );',
+		$parts[0], $parts[1],
+		$args['zoom'],
+		$counter
+	);
+
+	if ( $args['marker'] )
+	{
+		$html .= sprintf( '
+			var marker = new google.maps.Marker( {
+				position: center,
+				map: map%s
+			} );',
+			$args['marker_title'] ? ', title: "' . $args['marker_title'] . '"' : ''
+		);
+
+		if ( $args['info_window'] )
+		{
+			$html .= sprintf( '
+				var infoWindow = new google.maps.InfoWindow( {
+					content: "%s"
+				} );
+
+				google.maps.event.addListener( marker, "click", function()
+				{
+					infoWindow.open( map, marker );
+				} );',
+				$args['info_window']
+			);
+		}
+	}
+
+	$html .= '
+			}
+			google.maps.event.addDomListener(window, "load", initialize);
+		}());
+		</script>';
+
+	$counter++;
+	return $html;
 }

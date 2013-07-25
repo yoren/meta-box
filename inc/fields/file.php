@@ -13,8 +13,12 @@ if ( ! class_exists( 'RWMB_File_Field' ) )
 		 */
 		static function admin_enqueue_scripts()
 		{
+			wp_enqueue_style( 'rwmb-file', RWMB_CSS_URL . 'file.css', array(), RWMB_VER );
 			wp_enqueue_script( 'rwmb-file', RWMB_JS_URL . 'file.js', array( 'jquery', 'wp-ajax-response' ), RWMB_VER, true );
-			wp_enqueue_style( 'rwmb-file', RWMB_CSS_URL . 'file.css', array( ), RWMB_VER );
+			wp_localize_script( 'rwmb-file', 'rwmbFile', array(
+				'maxFileUploadsSingle' => __( 'You may only upload maximum %d file', 'rwmb' ),
+				'maxFileUploadsPlural' => __( 'You may only upload maximum %d files', 'rwmb' ),
+			) );
 		}
 
 		/**
@@ -77,14 +81,15 @@ if ( ! class_exists( 'RWMB_File_Field' ) )
 		 */
 		static function html( $html, $meta, $field )
 		{
-			$i18n_title  = _x( 'Upload files', 'file upload', 'rwmb' );
-			$i18n_more   = _x( '+ Add new file', 'file upload', 'rwmb' );
+			$i18n_title = apply_filters( 'rwmb_file_upload_string', _x( 'Upload Files', 'file upload', 'rwmb' ), $field );
+			$i18n_more  = apply_filters( 'rwmb_file_add_string', _x( '+ Add new file', 'file upload', 'rwmb' ), $field );
 
 			// Uploaded files
 			$html = self::get_uploaded_files( $meta, $field );
-			$new_file_classes = array('new-files');
-			if ( ! empty( $field['max_file_uploads'] ) && count( $meta ) >= (int) $field['max_file_uploads']  )
+			$new_file_classes = array( 'new-files' );
+			if ( !empty( $field['max_file_uploads'] ) && count( $meta ) >= (int) $field['max_file_uploads'] )
 				$new_file_classes[] = 'hidden';
+
 			// Show form upload
 			$html .= sprintf(
 				'<div class="%s">
@@ -130,8 +135,8 @@ if ( ! class_exists( 'RWMB_File_Field' ) )
 
 		static function file_html( $attachment_id )
 		{
-			$i18n_delete = _x( 'Delete', 'file upload', 'rwmb' );
-			$i18n_edit = _x( 'Edit', 'file upload', 'rwmb' );
+			$i18n_delete = apply_filters( 'rwmb_file_delete_string', _x( 'Delete', 'file upload', 'rwmb' ) );
+			$i18n_edit   = apply_filters( 'rwmb_file_edit_string', _x( 'Edit', 'file upload', 'rwmb' ) );
 			$li = '
 			<li>
 				<div class="rwmb-icon">%s</div>
@@ -262,8 +267,6 @@ if ( ! class_exists( 'RWMB_File_Field' ) )
 		 */
 		static function meta( $meta, $post_id, $saved, $field )
 		{
-			global $wpdb;
-
 			$meta = RW_Meta_Box::meta( $meta, $post_id, $saved, $field );
 
 			if ( empty( $meta ) )

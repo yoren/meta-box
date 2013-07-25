@@ -7,9 +7,9 @@ jQuery( document ).ready( function( $ )
 		var $clone_last = $input.find( '.rwmb-clone:last' ),
 			$clone = $clone_last.clone(),
 			$input, name;
-
+	
 		$clone.insertAfter( $clone_last );
-		$input = $clone.find( ':input' );
+		$input = $clone.find( ':input[class|="rwmb"]' );
 
 		// Reset value
 		$input.val( '' );
@@ -25,27 +25,15 @@ jQuery( document ).ready( function( $ )
 
 		// Toggle remove buttons
 		toggle_remove_buttons( $input );
-
-		// Fix color picker
-		if ( 'function' === typeof rwmb_update_color_picker )
-			rwmb_update_color_picker();
-
-		// Fix date picker
-		if ( 'function' === typeof rwmb_update_date_picker )
-			rwmb_update_date_picker();
-
-		// Fix time picker
-		if ( 'function' === typeof rwmb_update_time_picker )
-			rwmb_update_time_picker();
-
-		// Fix datetime picker
-		if ( 'function' === typeof rwmb_update_datetime_picker )
-			rwmb_update_datetime_picker();
+		
+		//Trigger custom clone event
+		$input.trigger( 'clone' );
 	}
 
 	// Add more clones
-	$( '.add-clone' ).click( function()
+	$( '.add-clone' ).on( 'click', function( e )
 	{
+		e.stopPropagation();
 		var $input = $( this ).parents( '.rwmb-input' ),
 			$clone_group = $( this ).parents( '.rwmb-field' ).attr( "clone-group" );
 
@@ -73,7 +61,7 @@ jQuery( document ).ready( function( $ )
 	} );
 
 	// Remove clones
-	$( '.rwmb-input' ).delegate( '.remove-clone', 'click', function()
+	$( '.rwmb-input' ).on( 'click', '.remove-clone', function()
 	{
 		var $this = $( this ),
 			$input = $this.parents( '.rwmb-input' ),

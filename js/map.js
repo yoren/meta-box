@@ -1,120 +1,176 @@
-
-var marker, map, geocoder;
-
-jQuery( document ).ready( function ()
+( function( $ )
 {
-   /*jshint jquery: true, devel:true, browser: true, newcap: true, noempty: true, strict: true, undef: true */
-   "use strict";
-   var latlng = new window.google.maps.LatLng( 53.346881, -6.258860 );
-   map        = new window.google.maps.Map( jQuery( '.rwmb-map-canvas' )[0], {
-      zoom              : 8,
-      center            : latlng,
-      streetViewControl : 0,
-      mapTypeId         : window.google.maps.MapTypeId.ROADMAP
-      });
-   marker     = new window.google.maps.Marker( {position: latlng, map: map, draggable: true} );
-   geocoder   = new window.google.maps.Geocoder();
+	'use strict';
 
-   window.google.maps.event.addListener( map, 'click', function ( event )
-   {
-      marker.setPosition( event.latLng );
-      updatePositionInput( event.latLng );
-   } );
-   window.google.maps.event.addListener( marker, 'drag', function ( event )
-   {
-      updatePositionInput( event.latLng );
-   } );
-   updatePositionMarker();
+	// Use function construction to store map & DOM elements separately for each instance
+	var mapField = function( $container )
+	{
+		this.$container = $container;
+	};
 
-   autoCompleteAddress();
+	// Use prototype for better performance
+	mapField.prototype = {
+		// Initialize everything
+		init: function()
+		{
+			this.initDomElements();
+			this.initMapElements();
 
-   function updatePositionInput( latLng )
-   {
-      jQuery( '#rwmb-map-coordinate' ).val( latLng.lat() + ',' + latLng.lng() );
-   }
+			this.initMarkerPosition();
+			this.addListeners();
+			this.autocomplete();
+		},
 
-   function updatePositionMarker()
-   {
-      var coord = jQuery( '#rwmb-map-coordinate' ).val(),
-         addressField = jQuery( '#rwmb-map-goto-address-button' ).val(),
-         l, zoom;
+		// Initialize DOM elements
+		initDomElements: function()
+		{
+			this.canvas = this.$container.find( '.rwmb-map-canvas' )[0];
+			this.$coordinate = this.$container.find( '.rwmb-map-coordinate' );
+			this.$findButton = this.$container.find( '.rwmb-map-goto-address-button' );
+			this.addressField = this.$findButton.val();
+		},
 
-      if ( coord )
-      {
-         l = coord.split( ',' );
-         marker.setPosition( new window.google.maps.LatLng( l[0], l[1] ) );
+		// Initialize map elements
+		initMapElements: function()
+		{
+			var latLng = new google.maps.LatLng( 53.346881, -6.258860 ); // Initial position for map
 
-         zoom = l.length > 2 ? parseInt( l[2], 10 ) : 15;
+	 		this.map = new google.maps.Map( this.canvas, {
+				center: latLng,
+				zoom: 14,
+				streetViewControl: 0,
+				mapTypeId: google.maps.MapTypeId.ROADMAP
+			} );
+			this.marker = new google.maps.Marker( {position: latLng, map: this.map, draggable: true} );
+			this.geocoder = new google.maps.Geocoder();
+		},
 
-         map.setCenter( marker.position );
-         map.setZoom( zoom );
-      }
-      else
-         if ( addressField ){
-            geocodeAddress( addressField );
-         }
-   }
+		// Initialize marker position
+		initMarkerPosition: function()
+		{
+			var coord = this.$coordinate.val(),
+				l,
+				zoom;
 
-   function geocodeAddress( addressField )
-   {
-      console.log(addressField);
-      var address = '',
-         fieldList = addressField.split( ',' ),
-         loop;
+			if ( coord )
+			{
+				l = coord.split( ',' );
+				this.marker.setPosition( new google.maps.LatLng( l[0], l[1] ) );
 
-      for ( loop = 0; loop < fieldList.length; loop++ )
-      {
-         address += jQuery( '#' + fieldList[loop] ).val();
-      }
+				zoom = l.length > 2 ? parseInt( l[2], 10 ) : 14;
 
-      address = address.replace( /\n/g, ',' );
-      address = address.replace( /,,/g, ',' );
-      geocoder.geocode( {'address': address}, function ( results, status )
-      {
-         if ( status == window.google.maps.GeocoderStatus.OK )
-         {
-            updatePositionInput( results[0].geometry.location );
-            marker.setPosition( results[0].geometry.location );
-            map.setCenter( marker.position );
-            map.setZoom( 15 );
-         }
-      } );
-   }
+				this.map.setCenter( this.marker.position );
+				this.map.setZoom( zoom );
+			}
+			else if ( this.addressField )
+			{
+				this.geocodeAddress();
+			}
+		},
 
+		// Add event listeners for 'click' & 'drag'
+		addListeners: function()
+		{
+			var that = this;
+			google.maps.event.addListener( this.map, 'click', function ( event )
+			{
+				that.marker.setPosition( event.latLng );
+				that.updateCoordinate( event.latLng );
+			} );
+			google.maps.event.addListener( this.marker, 'drag', function ( event )
+			{
+				that.updateCoordinate( event.latLng );
+			} );
 
-   function autoCompleteAddress(){
-      var addressField = jQuery( '#rwmb-map-goto-address-button' ).val();
-      if (!addressField) return null;
+			this.$findButton.on( 'click', function()
+			{
+				that.geocodeAddress();
+				return false;
+			} );
+		},
 
-      jQuery( '#' + addressField).autocomplete({
-         source: function(request, response) {
-            // TODO: add 'region' option, to help bias geocoder.
-           geocoder.geocode( {'address': request.term }, function(results, status) {
-             response(jQuery.map(results, function(item) {
-               return {
-                 label     : item.formatted_address,
-                 value     : item.formatted_address,
-                 latitude  : item.geometry.location.lat(),
-                 longitude : item.geometry.location.lng()
-               };
-             }));
-           });
-         },
-         select: function(event, ui) {
-                 
-         jQuery("#rwmb-map-coordinate").val(ui.item.latitude + ',' + ui.item.longitude );       
-         
-           var location = new window.google.maps.LatLng(ui.item.latitude, ui.item.longitude);
+		// Autocomplete address
+		autocomplete: function()
+		{
+			var that = this;
 
-           map.setCenter(location);
-            // Drop the Marker
-           setTimeout( function(){
-              marker.setValues({
-                 position    : location,
-                 animation   : window.google.maps.Animation.DROP
-              });
-           }, 1500);
-         }
-      });
-   }
-} );
+			// No address field or more than 1 address fields, ignore
+			if ( !this.addressField || this.addressField.split( ',' ).length > 1 )
+				return;
+
+			$( '#' + this.addressField ).autocomplete( {
+				source: function( request, response )
+				{
+					// TODO: add 'region' option, to help bias geocoder.
+					that.geocoder.geocode( {
+						'address': request.term
+					}, function( results )
+					{
+						response( $.map( results, function( item )
+						{
+							return {
+								label: item.formatted_address,
+								value: item.formatted_address,
+								latitude: item.geometry.location.lat(),
+								longitude: item.geometry.location.lng()
+							};
+				 		} ) );
+					} );
+				},
+				select: function( event, ui )
+				{
+					var latLng = new google.maps.LatLng( ui.item.latitude, ui.item.longitude );
+
+					that.map.setCenter( latLng );
+					that.marker.setPosition( latLng );
+					that.updateCoordinate( latLng );
+				}
+			} );
+		},
+
+		// Update coordinate to input field
+		updateCoordinate: function( latLng )
+		{
+			this.$coordinate.val( latLng.lat() + ',' + latLng.lng() );
+		},
+
+		// Find coordinates by address
+		// Find coordinates by address
+		geocodeAddress: function()
+		{
+			var address = '',
+				addressList = new Array(),
+				fieldList = this.addressField.split( ',' ),
+				loop,
+				that = this;
+
+			for ( loop = 0; loop < fieldList.length; loop++ )
+			 addressList[loop]=jQuery( '#' + fieldList[loop] ).val();
+			 
+			address = addressList.join(",").replace( /\n/g, ',' ).replace( /,,/g, ',' );
+
+			if (address)
+			{
+				this.geocoder.geocode( {'address': address}, function( results, status )
+				{
+					if ( status === google.maps.GeocoderStatus.OK )
+					{
+						that.map.setCenter( results[0].geometry.location );
+						that.marker.setPosition( results[0].geometry.location );
+						that.updateCoordinate( results[0].geometry.location );
+					}
+				} );
+			}
+		},
+	};
+
+	$( function()
+	{
+		$( '.rwmb-map-field' ).each( function()
+		{
+			var field = new mapField( $( this ) );
+			field.init();
+		} );
+	} );
+
+} )( jQuery );

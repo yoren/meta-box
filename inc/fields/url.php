@@ -29,21 +29,19 @@ if ( ! class_exists( 'RWMB_URL_Field' ) )
 			);
 		}
 
-		
 		/**
-		 * Sanitizes url
+		 * Sanitize url
 		 *
-		 * @param $post_id
-		 * @param $field
-		 * @param $old
-		 * @param $new
+		 * @param mixed $new
+		 * @param mixed $old
+		 * @param int   $post_id
+		 * @param array $field
 		 *
-		 * @return $new
+		 * @return string
 		 */
-		static function value( $new, $old, $post_id, $field) 
+		static function value( $new, $old, $post_id, $field)
 		{
-			$new = esc_url($new);
-			return $new;
+			return esc_url( $new );
 		}
 	}
 }

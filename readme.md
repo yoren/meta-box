@@ -14,19 +14,28 @@ Meta Box plugin provides an API to easily implement custom meta boxes in editing
 
 ### Supported fields
 
+- button
 - checkbox_list
 - checkbox
 - color
 - date
 - datetime
+- divider
+- email
 - file
+- file_advanced
+- heading
 - hidden
 - image
+- image_advanced
 - map
 - number
+- oembed
 - password
 - plupload_image
+- post
 - radio
+- range
 - select
 - select_advanced (uses [select2](http://ivaynberg.github.com/select2/))
 - slider
@@ -35,6 +44,7 @@ Meta Box plugin provides an API to easily implement custom meta boxes in editing
 - textarea
 - thickbox_image
 - time
+- url
 - wysiwyg
 
 ***
@@ -52,7 +62,7 @@ To getting started with the plugin API, please read [this tutorial](http://www.d
 ## Contributors
 
 - [Tran Ngoc Tuan Anh a.k.a Rilwis](http://www.deluxeblogtips.com/) - Initial & lead developer
-- [Franz Josef Kaiser](http://unserkaiser.com)
+- [Franz Josef Kaiser](http://profiles.wordpress.org/f-j-kaiser)
 - Omnicia
 - ruanmer
 - PerWiklander
@@ -63,6 +73,51 @@ To getting started with the plugin API, please read [this tutorial](http://www.d
 ***
 
 ## Changelog
+
+### 4.3.3
+* Bug fix: cannot clear all terms in taxonomy field
+* Bug fix: potential problem with autosave
+* Bug fix: cannot save zero string value "0"
+* Improvement: add Turkish language
+* Improvement: add taxonomy_advanced field, which saves term IDs as comma separated value in custom field
+
+### 4.3.2
+* Bug fix: allow to have more than 1 map on a page
+* Bug fix: use HTTPS for Google Maps to work both in HTTP & HTTPS
+* Bug fix: allow to clear all terms in taxonomy field
+* Bug fix: "std" value for select fields is no longer "placeholder"
+* Improvement: add "placeholder" param for select fields
+* Improvement: add to helper function ability to show Google Maps in the front end. Check documentation for usage.
+* Improvement: add spaces between radio inputs
+* Improvement: add more params to "rwmb_meta" filter
+* Improvement: using CSS animation for delete image
+
+### 4.3.1
+* Bug fix: fatal error if ASP open tag is allowed in php.ini
+
+### 4.3
+* Bug fix: show full size image after upload if thumbnail is not available
+* Bug fix: new added file not shown
+* Bug fix: issue with color field disappearing
+* Bug fix: `max_file_upload` now works for normal `file` & `image` as well
+* Bug fix: problem with uploading with the advanced fields
+* Bug fix: file & image advanced not saving
+* Bug fix: `select_advanced` cloning issue
+* Bug fix: `plupload_image` ordering
+* Improvement: add `divider`, `heading`, `button`, `range`, `oembed`, `email`, `post` fields
+* Improvement: translation for file & image fields
+* Improvement: add option `default_hidden` to hide meta box by default
+* Improvement: allow to have multiple maps on the same page
+* Improvement: file and image advanced now use Underscore.js
+* Improvement: `slider` filed now has `prefix` and `suffix` for text labels and `js_options` for more JS options
+* Improvement: WYSIWYS can bypass the `wpautop` using `raw` parameter
+* Improvement: `color` field now supports new color picker in WP 3.5
+* Improvement: add `ID` to results returned by `rwmb_meta` when getting meta value of file & image
+* Improvement: auto use localized version for date & time fields
+* Improvement: add `timestamp` option to save the datetime as unix timestamp internally
+* Improvement: add `autosave` option for meta box
+* Improvement: add `force_delete` option for file and image field
+* And lots of changes and improvements
 
 ### 4.2.4
 * Bug fix: path to Select2 JS and CSS. [Link](http://wordpress.org/support/topic/missing-files-5)

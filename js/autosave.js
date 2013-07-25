@@ -4,9 +4,13 @@ jQuery( function( $ )
 	{
 		if ( -1 != s.data.indexOf( 'action=autosave' ) )
 		{
-			$( '.rwmb-meta-box :input' ).each( function()
+			$( '.rwmb-meta-box').each( function()
 			{
-				s.data += '&' + $( this ).serialize();
+				var $meta_box = $( this );
+				if ( $meta_box.data( 'autosave' ) == true )
+				{
+					s.data += '&' + $meta_box.find( ':input' ).serialize();
+				}
 			} );
 		}
 	} );

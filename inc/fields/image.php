@@ -44,21 +44,19 @@ if ( ! class_exists( 'RWMB_Image_Field' ) )
 		{
 			$field_id = isset( $_POST['field_id'] ) ? $_POST['field_id'] : 0;
 			$order    = isset( $_POST['order'] ) ? $_POST['order'] : 0;
+			$post_id    = isset( $_POST['post_id'] ) ? (int) $_POST['post_id'] : 0;
+
 
 			check_ajax_referer( "rwmb-reorder-images_{$field_id}" );
 
 			parse_str( $order, $items );
 			$items = $items['item'];
-			$order = 1;
+			
+			delete_post_meta( $post_id, $field_id );
 
 			foreach ( $items as $item )
 			{
-				wp_update_post(
-					array(
-						'ID'         => $item,
-						'menu_order' => $order++,
-					)
-				);
+				add_post_meta( $post_id, $field_id, $item, false );
 			}
 
 			RW_Meta_Box::ajax_response( __( 'Order saved', 'rwmb' ), 'success' );
@@ -75,8 +73,8 @@ if ( ! class_exists( 'RWMB_Image_Field' ) )
 		 */
 		static function html( $html, $meta, $field )
 		{
-			$i18n_title = _x( 'Upload images', 'image upload', 'rwmb' );
-			$i18n_more  = _x( '+ Add new image', 'image upload', 'rwmb' );
+			$i18n_title = apply_filters( 'rwmb_image_upload_string', _x( 'Upload Images', 'image upload', 'rwmb' ), $field );
+			$i18n_more  = apply_filters( 'rwmb_image_add_string', _x( '+ Add new image', 'image upload', 'rwmb' ), $field );
 
 			// Uploaded images
 			$html .= self::get_uploaded_images( $meta, $field );
@@ -136,14 +134,13 @@ if ( ! class_exists( 'RWMB_Image_Field' ) )
 		 * Get HTML markup for ONE uploaded image
 		 *
 		 * @param int $image Image ID
-		 * @param int $field
 		 *
 		 * @return string
 		 */
 		static function img_html( $image )
 		{
-			$i18n_delete = _x( 'Delete', 'image upload', 'rwmb' );
-			$i18n_edit   = _x( 'Edit', 'image upload', 'rwmb' );
+			$i18n_delete = apply_filters( 'rwmb_image_delete_string', _x( 'Delete', 'image upload', 'rwmb' ) );
+			$i18n_edit   = apply_filters( 'rwmb_image_edit_string', _x( 'Edit', 'image upload', 'rwmb' ) );
 			$li = '
 				<li id="item_%s">
 					<img src="%s" />
@@ -182,21 +179,8 @@ if ( ! class_exists( 'RWMB_Image_Field' ) )
 			global $wpdb;
 
 			$meta = RW_Meta_Box::meta( $meta, $post_id, $saved, $field );
-
-			if ( empty( $meta ) )
-				return array();
-
-			$meta = implode( ',' , (array) $meta );
-
-			// Re-arrange images with 'menu_order'
-			$meta = $wpdb->get_col( "
-				SELECT ID FROM {$wpdb->posts}
-				WHERE post_type = 'attachment'
-				AND ID in ({$meta})
-				ORDER BY menu_order ASC
-			" );
-
-			return (array) $meta;
+			
+			return empty( $meta ) ? array() : (array) $meta;
 		}
 	}
 }
