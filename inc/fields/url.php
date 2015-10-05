@@ -12,20 +12,21 @@ if ( ! class_exists( 'RWMB_URL_Field' ) )
 		/**
 		 * Get field HTML
 		 *
-		 * @param string $html
-		 * @param mixed  $meta
-		 * @param array  $field
+		 * @param mixed $meta
+		 * @param array $field
 		 *
 		 * @return string
 		 */
-		static function html( $html, $meta, $field )
+		static function html( $meta, $field )
 		{
 			return sprintf(
-				'<input type="url" class="rwmb-url" name="%s" id="%s" value="%s" size="%s" />',
+				'<input type="url" class="rwmb-url" name="%s" id="%s" value="%s" size="%s" placeholder="%s" %s/>',
 				$field['field_name'],
 				$field['id'],
 				$meta,
-				$field['size']
+				$field['size'],
+				$field['placeholder'],
+				$field['pattern'] ? 'pattern="' .$field['pattern'] . '"' : ''
 			);
 		}
 
@@ -39,9 +40,9 @@ if ( ! class_exists( 'RWMB_URL_Field' ) )
 		 *
 		 * @return string
 		 */
-		static function value( $new, $old, $post_id, $field)
+		static function value( $new, $old, $post_id, $field )
 		{
-			return esc_url( $new );
+			return is_array( $new ) ? array_map( 'esc_url', $new ) : esc_url( $new );
 		}
 	}
 }

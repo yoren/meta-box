@@ -4,18 +4,17 @@ defined( 'ABSPATH' ) || exit;
 
 if ( ! class_exists( 'RWMB_Button_Field' ) )
 {
-	class RWMB_Button_Field
+	class RWMB_Button_Field extends RWMB_Field
 	{
 		/**
 		 * Get field HTML
 		 *
-		 * @param string $html
-		 * @param mixed  $meta
-		 * @param array  $field
+		 * @param mixed $meta
+		 * @param array $field
 		 *
 		 * @return string
 		 */
-		static function html( $html, $meta, $field )
+		static function html( $meta, $field )
 		{
 			return sprintf(
 				'<a href="#" id="%s" class="button hide-if-no-js">%s</a>',
@@ -33,7 +32,8 @@ if ( ! class_exists( 'RWMB_Button_Field' ) )
 		 */
 		static function normalize_field( $field )
 		{
-			$field['std'] = $field['std'] ? $field['std'] : __( 'Click me', 'rwmb' );
+			$field['std'] = $field['std'] ? $field['std'] : __( 'Click me', 'meta-box' );
+
 			return $field;
 		}
 	}

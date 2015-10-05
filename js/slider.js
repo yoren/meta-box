@@ -1,12 +1,16 @@
 jQuery( function( $ )
 {
-	$( '.rwmb-slider' ).each( function()
+	'use strict';
+
+	function rwmb_update_slider()
 	{
-		var $this = $( this ),
-			$input = $this.siblings( 'input' ),
-			$valueLabel = $this.siblings( '.rwmb-slider-value-label' ).find( 'span' ),
+		var $input = $( this ),
+			$slider = $input.siblings( '.rwmb-slider' ),
+			$valueLabel = $slider.siblings( '.rwmb-slider-value-label' ).find( 'span' ),
 			value = $input.val(),
-			options = $this.data( 'options' );
+			options = $slider.data( 'options' );
+
+		$slider.html( '' );
 
 		if ( !value )
 		{
@@ -27,6 +31,9 @@ jQuery( function( $ )
 			$valueLabel.text( ui.value );
 		};
 
-		$this.slider( options );
-	} );
+		$slider.slider( options );
+	}
+
+	$( ':input.rwmb-slider-value' ).each( rwmb_update_slider );
+	$( '.rwmb-input' ).on( 'clone', ':input.rwmb-slider-value', rwmb_update_slider );
 } );

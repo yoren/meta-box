@@ -5,13 +5,13 @@ global $meta_boxes;
 $meta_boxes   = array();
 $meta_boxes[] = array(
 	'id'     => 'any_id',
-	'title'  => __( 'Meta Box Title', 'rwmb' ),
-	'pages'  => array( 'post' ),
+	'title'  => __( 'Meta Box Title', 'your-prefix' ),
+	'post_types' => post,
 	'fields' => array(
 
 		// IMAGE UPLOAD
 		array(
-			'name' => __( 'Your images', 'rwmb' ),
+			'name' => __( 'Your images', 'your-prefix' ),
 			'id'   => "{$prefix}img",
 			'type' => 'plupload_image',
 		),
@@ -62,9 +62,9 @@ function rw_maybe_include()
 	$checked_post_IDs = array( 61, 63, 65, 67, 2 );
 
 	if ( isset( $_GET['post'] ) )
-		$post_id = $_GET['post'];
+		$post_id = intval( $_GET['post'] );
 	elseif ( isset( $_POST['post_ID'] ) )
-		$post_id = $_POST['post_ID'];
+		$post_id = intval( $_POST['post_ID'] );
 	else
 		$post_id = false;
 

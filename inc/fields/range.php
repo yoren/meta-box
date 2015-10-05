@@ -2,9 +2,9 @@
 // Prevent loading this file directly
 defined( 'ABSPATH' ) || exit;
 
-if ( !class_exists( 'RWMB_Range_Field' ) )
+if ( ! class_exists( 'RWMB_Range_Field' ) )
 {
-	class RWMB_Range_Field
+	class RWMB_Range_Field extends RWMB_Field
 	{
 		/**
 		 * Enqueue styles
@@ -19,13 +19,12 @@ if ( !class_exists( 'RWMB_Range_Field' ) )
 		/**
 		 * Get field HTML
 		 *
-		 * @param string $html
-		 * @param mixed  $meta
-		 * @param array  $field
+		 * @param mixed $meta
+		 * @param array $field
 		 *
 		 * @return string
 		 */
-		static function html( $html, $meta, $field )
+		static function html( $meta, $field )
 		{
 			return sprintf(
 				'<input type="range" class="rwmb-range" name="%s" id="%s" value="%s" min="%s" max="%s" step="%s" />',
@@ -50,8 +49,9 @@ if ( !class_exists( 'RWMB_Range_Field' ) )
 			$field = wp_parse_args( $field, array(
 				'min'  => 0,
 				'max'  => 10,
-				'step' => 1
+				'step' => 1,
 			) );
+
 			return $field;
 		}
 
@@ -67,14 +67,16 @@ if ( !class_exists( 'RWMB_Range_Field' ) )
 		 */
 		static function value( $new, $old, $post_id, $field )
 		{
-			$new = intval($new);
-			$min = intval($field['min']);
-			$max = intval($field['max']);
+			$new = intval( $new );
+			$min = intval( $field['min'] );
+			$max = intval( $field['max'] );
 
-			if ($new < $min) {
+			if ( $new < $min )
+			{
 				return $min;
 			}
-			else if ($new > $max) {
+			elseif ( $new > $max )
+			{
 				return $max;
 			}
 

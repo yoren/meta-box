@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 
 if ( ! class_exists( 'RWMB_Heading_Field' ) )
 {
-	class RWMB_Heading_Field
+	class RWMB_Heading_Field extends RWMB_Field
 	{
 		/**
 		 * Enqueue scripts and styles
@@ -19,32 +19,30 @@ if ( ! class_exists( 'RWMB_Heading_Field' ) )
 		/**
 		 * Show begin HTML markup for fields
 		 *
-		 * @param string $html
-		 * @param mixed  $meta
-		 * @param array  $field
+		 * @param mixed $meta
+		 * @param array $field
 		 *
 		 * @return string
 		 */
-		static function begin_html( $html, $meta, $field )
+		static function begin_html( $meta, $field )
 		{
-			return sprintf(
-				'<h4>%s</h4>',
-				$field['name']
-			);
+			$attributes = empty( $field['id'] ) ? '' : " id='{$field['id']}'";
+			return sprintf( '<h4%s>%s</h4>', $attributes, $field['name'] );
 		}
 
 		/**
 		 * Show end HTML markup for fields
 		 *
-		 * @param string $html
-		 * @param mixed  $meta
-		 * @param array  $field
+		 * @param mixed $meta
+		 * @param array $field
 		 *
 		 * @return string
 		 */
-		static function end_html( $html, $meta, $field )
+		static function end_html( $meta, $field )
 		{
-			return '';
+			$id = $field['id'] ? " id='{$field['id']}-description'" : '';
+
+			return $field['desc'] ? "<p{$id} class='description'>{$field['desc']}</p>" : '';
 		}
 	}
 }

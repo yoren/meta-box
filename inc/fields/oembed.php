@@ -16,9 +16,8 @@ if ( ! class_exists( 'RWMB_OEmbed_Field' ) )
 		 */
 		static function admin_enqueue_scripts()
 		{
-			wp_enqueue_script( 'rwmb-oembed', RWMB_JS_URL . 'oembed.js', array(  ), RWMB_VER, true );
-			//wp_enqueue_style( 'rwmb-oembed', RWMB_CSS_URL . 'oembed.css', array(  ), RWMB_VER );
-			wp_localize_script( 'rwmb-oembed', 'RWMB_OEmbed', array( 'url' => RWMB_URL ) );
+			wp_enqueue_style( 'rwmb-oembed', RWMB_CSS_URL . 'oembed.css' );
+			wp_enqueue_script( 'rwmb-oembed', RWMB_JS_URL . 'oembed.js', array(), RWMB_VER, true );
 		}
 
 		/**
@@ -28,7 +27,6 @@ if ( ! class_exists( 'RWMB_OEmbed_Field' ) )
 		 */
 		static function add_actions()
 		{
-			// Attach images via Ajax
 			add_action( 'wp_ajax_rwmb_get_embed', array( __CLASS__, 'wp_ajax_get_embed' ) );
 		}
 
@@ -39,60 +37,75 @@ if ( ! class_exists( 'RWMB_OEmbed_Field' ) )
 		 */
 		static function wp_ajax_get_embed()
 		{
-			global $post;
-			$url = isset( $_POST['oembed_url'] ) ? $_POST['oembed_url'] : 0;
-			$post_id = is_numeric( $_REQUEST['post_id'] ) ? (int) $_REQUEST['post_id'] : 0;
-			if ( isset( $_REQUEST['post_id'] ) )
-				$post = get_post( $_REQUEST['post_id'] );
-			$embed = self::get_embed( $url );
-			RW_Meta_Box::ajax_response( $embed, 'success' );
-			exit;
+			$url = isset( $_POST['url'] ) ? $_POST['url'] : '';
+			wp_send_json_success( self::get_embed( $url ) );
 		}
 
-		/***
-		* Get embed html from url
-		* @param 	string $url
-		* $return 	string
-		*/
-
+		/**
+		 * Get embed html from url
+		 *
+		 * @param string $url
+		 *
+		 * @return string
+		 */
 		static function get_embed( $url )
 		{
-				
-			$embed = wp_oembed_get( esc_url( $url ) );
+			$embed = @wp_oembed_get( $url );
 
-			if( $embed )
-			{
-				return $embed;
-			}
-			else
-			{
-				return  'Embed not available.';
-			}
-
+			return $embed ? $embed : __( 'Embed HTML not available.', 'meta-box' );
 		}
 
 		/**
 		 * Get field HTML
 		 *
-		 * @param string $html
-		 * @param mixed  $meta
-		 * @param array  $field
+		 * @param mixed $meta
+		 * @param array $field
 		 *
 		 * @return string
 		 */
-		static function html( $html, $meta, $field )
+		static function html( $meta, $field )
 		{
 			return sprintf(
-				'<input type="url" class="rwmb-oembed" name="%s" id="%s" value="%s" size="%s" />
-				<span class="spinner" style="display: none;"></span>
-				<a href="#" class="show-embed button-secondary">Show embed</a>
-				<div class="embed-code"> %s </div>',
+				'<input type="url" class="rwmb-oembed" name="%s" id="%s" value="%s" size="%s">
+				<a href="#" class="show-embed button">%s</a>
+				<span class="spinner"></span>
+				<div class="embed-code">%s</div>',
 				$field['field_name'],
 				$field['id'],
 				$meta,
 				$field['size'],
-				self::get_embed( $meta )
+				__( 'Preview', 'meta-box' ),
+				$meta ? self::get_embed( $meta ) : ''
 			);
+		}
+
+		/**
+		 * Output the field value
+		 * Display embed media
+		 *
+		 * @param  array    $field   Field parameters
+		 * @param  array    $args    Additional arguments. Not used for these fields.
+		 * @param  int|null $post_id Post ID. null for current post. Optional.
+		 *
+		 * @return mixed Field value
+		 */
+		static function the_value( $field, $args = array(), $post_id = null )
+		{
+			$value = self::get_value( $field, $args, $post_id );
+			if ( $field['clone'] )
+			{
+				$output = '<ul>';
+				foreach ( $value as $subvalue )
+				{
+					$output .= '<li>' . self::get_embed( $subvalue ) . '</li>';
+				}
+				$output .= '</ul>';
+			}
+			else
+			{
+				$output = self::get_embed( $value );
+			}
+			return $output;
 		}
 	}
 }

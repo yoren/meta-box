@@ -2,29 +2,28 @@
 // Prevent loading this file directly
 defined( 'ABSPATH' ) || exit;
 
-if ( !class_exists( 'RWMB_Number_Field' ) )
+if ( ! class_exists( 'RWMB_Number_Field' ) )
 {
-	class RWMB_Number_Field
+	class RWMB_Number_Field extends RWMB_Field
 	{
 		/**
 		 * Get field HTML
 		 *
-		 * @param string $html
-		 * @param mixed  $meta
-		 * @param array  $field
+		 * @param mixed $meta
+		 * @param array $field
 		 *
 		 * @return string
 		 */
-		static function html( $html, $meta, $field )
+		static function html( $meta, $field )
 		{
 			return sprintf(
-				'<input type="number" class="rwmb-number" name="%s" id="%s" value="%s" step="%s" min="%s" %s/>',
+				'<input type="number" class="rwmb-number" name="%s" id="%s" value="%s" step="%s" min="%s" placeholder="%s"/>',
 				$field['field_name'],
 				empty( $field['clone'] ) ? $field['id'] : '',
 				$meta,
 				$field['step'],
 				$field['min'],
-				!$field['readonly'] ? '' : 'readonly="readonly"'
+				$field['placeholder']
 			);
 		}
 
@@ -41,6 +40,7 @@ if ( !class_exists( 'RWMB_Number_Field' ) )
 				'step' => 1,
 				'min'  => 0,
 			) );
+
 			return $field;
 		}
 	}

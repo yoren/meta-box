@@ -5,30 +5,29 @@ defined( 'ABSPATH' ) || exit;
 // Make sure "text" field is loaded
 require_once RWMB_FIELDS_DIR . 'text.php';
 
-if ( !class_exists( 'RWMB_Email_Field' ) )
+if ( ! class_exists( 'RWMB_Email_Field' ) )
 {
 	class RWMB_Email_Field extends RWMB_Text_Field
 	{
 		/**
 		 * Get field HTML
 		 *
-		 * @param string $html
-		 * @param mixed  $meta
-		 * @param array  $field
+		 * @param mixed $meta
+		 * @param array $field
 		 *
 		 * @return string
 		 */
-		static function html( $html, $meta, $field )
+		static function html( $meta, $field )
 		{
 			return sprintf(
-				'<input type="email" class="rwmb-email" name="%s" id="%s" value="%s" size="%s" />',
+				'<input type="email" class="rwmb-email" name="%s" id="%s" value="%s" size="%s" placeholder="%s"/>',
 				$field['field_name'],
 				$field['id'],
 				$meta,
-				$field['size']
+				$field['size'],
+				$field['placeholder']
 			);
 		}
-
 
 		/**
 		 * Sanitize email
@@ -42,7 +41,17 @@ if ( !class_exists( 'RWMB_Email_Field' ) )
 		 */
 		static function value( $new, $old, $post_id, $field )
 		{
-			return sanitize_email( $new );
+			if ( $field['clone'] )
+			{
+				$new = (array) $new;
+				$new = array_map( 'sanitize_email', $new );
+			}
+			else
+			{
+				$new = sanitize_email( $new );
+			}
+
+			return $new;
 		}
 	}
 }
