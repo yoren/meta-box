@@ -1,13 +1,26 @@
-jQuery(document).ready(function($) {
-	$('.rwmb-color-picker').each(function() {
-		var $this = $(this),
-			id = $this.attr('rel');
+jQuery( function ( $ )
+{
+	'use strict';
 
-		$this.farbtastic('#' + id);
-	});
+	/**
+	 * Update color picker element
+	 * Used for static & dynamic added elements (when clone)
+	 */
+	function update()
+	{
+		var $this = $( this ),
+			$container = $this.closest( '.rwmb-color-clone' );
 
-	$('.rwmb-color-select').click(function() {
-		$(this).siblings('.rwmb-color-picker').toggle();
-		return false;
-	});
-});
+		// Clone doesn't have input for color picker, we have to add the input and remove the color picker container
+		if ( $container.length > 0 )
+		{
+			$this.appendTo( $container ).siblings( '.wp-picker-container' ).remove();
+		}
+
+		// Show color picker
+		$this.wpColorPicker( $this.data( 'options' ) );
+	}
+
+	$( ':input.rwmb-color' ).each( update );
+	$( '.rwmb-input' ).on( 'clone', 'input.rwmb-color', update );
+} );

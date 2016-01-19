@@ -1,42 +1,62 @@
 <?php
+// Prevent loading this file directly
+defined( 'ABSPATH' ) || exit;
 
-if ( ! class_exists( 'RWMB_Color_Field' ) ) 
+class RWMB_Color_Field extends RWMB_Text_Field
 {
-	class RWMB_Color_Field 
+	/**
+	 * Enqueue scripts and styles
+	 *
+	 * @return void
+	 */
+	static function admin_enqueue_scripts()
 	{
-		/**
-		 * Enqueue scripts and styles
-		 * 
-		 * @return void
-		 */
-		static function admin_print_styles() 
-		{
-			wp_enqueue_style( 'rwmb-color', RWMB_CSS_URL.'color.css', array( 'farbtastic' ), RWMB_VER );
-			wp_enqueue_script( 'rwmb-color', RWMB_JS_URL.'color.js', array( 'farbtastic' ), RWMB_VER, true );
-		}
+		wp_enqueue_style( 'rwmb-color', RWMB_CSS_URL . 'color.css', array( 'wp-color-picker' ), RWMB_VER );
+		wp_enqueue_script( 'rwmb-color', RWMB_JS_URL . 'color.js', array( 'wp-color-picker' ), RWMB_VER, true );
+	}
 
-		/**
-		 * Get field HTML
-		 *
-		 * @param string $html
-		 * @param mixed  $meta
-		 * @param array  $field
-		 *
-		 * @return string
-		 */
-		static function html( $html, $meta, $field ) 
-		{
-			if ( empty( $meta ) )
-				$meta = '#';
+	/**
+	 * Normalize parameters for field
+	 *
+	 * @param array $field
+	 *
+	 * @return array
+	 */
+	static function normalize( $field )
+	{
+		$field = wp_parse_args( $field, array(
+			'size'       => 7,
+			'maxlength'  => 7,
+			'pattern'    => '^#+([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$',
+			'js_options' => array(),
+		) );
 
-			$html = <<<HTML
-<input class="rwmb-color" type="text" name="{$field['id']}" id="{$field['id']}" value="{$meta}" size="8" />
-<a href="#" class="rwmb-color-select" rel="{$field['id']}">%s</a>
-<div class="rwmb-color-picker" rel="{$field['id']}"></div>
-HTML;
-			$html = sprintf( $html, __( 'Select a color', RWMB_TEXTDOMAIN ) );
+		$field['js_options'] = wp_parse_args( $field['js_options'], array(
+			'defaultColor' => false,
+			'hide'         => true,
+			'palettes'     => true,
+		) );
 
-			return $html;
-		}
+		$field = parent::normalize( $field );
+
+		return $field;
+	}
+	
+	/**
+	 * Get the attributes for a field
+	 *
+	 * @param array $field
+	 * @param mixed value
+	 *
+	 * @return array
+	 */
+	static function get_attributes( $field, $value = null )
+	{
+		$attributes = parent::get_attributes( $field, $value );
+		$attributes = wp_parse_args( $attributes, array(
+			'data-options' => wp_json_encode( $field['js_options'] ),
+		) );
+		
+		return $attributes;
 	}
 }

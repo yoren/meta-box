@@ -1,46 +1,39 @@
-jQuery( document ).ready( function($) 
+jQuery( function( $ )
 {
-	var 
-		 id		= null
-		,el		= null
-		,input	= null
-		,label	= null
-		,format	= null
-		,value	= null
-		,update	= null
-	;
-	$( '.rwmb-slider' ).each( function( i, val ) 
+	'use strict';
+
+	function rwmb_update_slider()
 	{
-		id		= $( val ).attr( 'id' );
-		el		= $( '#' + id );
-		input	= $( '[name=' + id + ']' );
-		label	= $( '[for=' + id + ']' );
-		format	= $( el ).attr( 'rel' );
+		var $input = $( this ),
+			$slider = $input.siblings( '.rwmb-slider' ),
+			$valueLabel = $slider.siblings( '.rwmb-slider-value-label' ).find( 'span' ),
+			value = $input.val(),
+			options = $slider.data( 'options' );
 
-		$( label ).append( ': <span id="' + id + '-label"></span>' );
-		update	= $( '#' + id + '-label' );
+		$slider.html( '' );
 
-		if ( ! $( input ).val() || 'undefined' === $( input ).val() || null === typeof $( input ).val() )
+		if ( !value )
 		{
-			$( input ).val( $( el ).slider( "values", 0 ) );
-			$( update ).text( "0" );
+			value = 0;
+			$input.val( 0 );
+			$valueLabel.text( '0' );
 		}
 		else
 		{
-			value = $( input ).val();
-			$( update ).text( value );
+			$valueLabel.text( value );
 		}
-		if ( 0 < format.length )
-			$( update ).append( ' ' + format );
 
-		el.slider(
+		// Assign field value and callback function when slide
+		options.value = value;
+		options.slide = function( event, ui )
 		{
-			value:	value,
-			slide:	function( event, ui )
-			{
-				$( input ).val( ui.value );
-				$( update ).text( ui.value + ' ' + format );
-			}
-		} );
-	});
+			$input.val( ui.value );
+			$valueLabel.text( ui.value );
+		};
+
+		$slider.slider( options );
+	}
+
+	$( ':input.rwmb-slider-value' ).each( rwmb_update_slider );
+	$( '.rwmb-input' ).on( 'clone', ':input.rwmb-slider-value', rwmb_update_slider );
 } );

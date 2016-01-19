@@ -2,330 +2,412 @@
 /**
  * Registering meta boxes
  *
- * In this file, I'll show you how to add more field type (in this case, the 'taxonomy' type)
- * All the definitions of meta boxes are listed below with comments, please read them CAREFULLY
+ * All the definitions of meta boxes are listed below with comments.
+ * Please read them CAREFULLY.
  *
- * You also should read the changelog to know what has been changed
+ * You also should read the changelog to know what has been changed before updating.
  *
- * For more information, please visit: http://www.deluxeblogtips.com/2010/04/how-to-create-meta-box-wordpress-post.html
- *
+ * For more information, please visit:
+ * @link http://metabox.io/docs/registering-meta-boxes/
  */
 
-/**
- * Add field type: 'taxonomy'
- *
- * Note: The class name must be in format "RWMB_{$field_type}_Field"
- */
-if ( !class_exists( 'RWMB_Taxonomy_Field' ) )
-{
-	class RWMB_Taxonomy_Field
-	{
-		/**
-		 * Enqueue scripts and styles
-		 *
-		 * @return void
-		 */
-		static function admin_print_styles()
-		{
-			wp_enqueue_style( 'rwmb-taxonomy', RWMB_CSS_URL . 'taxonomy.css', RWMB_VER );
-			wp_enqueue_script( 'rwmb-taxonomy', RWMB_JS_URL . 'taxonomy.js', array( 'jquery', 'wp-ajax-response' ), RWMB_VER, true );
-		}
 
-		/**
-		 * Add default value for 'taxonomy' field
-		 *
-		 * @param $field
-		 *
-		 * @return array
-		 */
-		static function normalize_field( $field )
-		{
-			// Default query arguments for get_terms() function
-			$default_args = array(
-				'hide_empty' => false
-			);
-			if ( !isset( $field['options']['args'] ) )
-				$field['options']['args'] = $default_args;
-			else
-				$field['options']['args'] = wp_parse_args( $field['options']['args'], $default_args );
-
-			// Show field as checkbox list by default
-			if ( !isset( $field['options']['type'] ) )
-				$field['options']['type'] = 'checkbox_list';
-
-			// If field is shown as checkbox list, add multiple value
-			if ( 'checkbox_list' == $field['options']['type'] ||  'checkbox_tree' == $field['options']['type'])
-				$field['multiple'] = true;
-
-			if('checkbox_tree' == $field['options']['type'] && !isset( $field['options']['args']['parent'] ) )
-				$field['options']['args']['parent'] = 0;
-
-			return $field;
-		}
-
-		/**
-		 * Get field HTML
-		 *
-		 * @param $html
-		 * @param $field
-		 * @param $meta
-		 *
-		 * @return string
-		 */
-		static function html( $html, $meta, $field )
-		{
-			global $post;
-
-			$options = $field['options'];
-
-			$meta = wp_get_post_terms( $post->ID, $options['taxonomy'], array( 'fields' => 'ids' ) );
-			$meta = is_array( $meta ) ? $meta : ( array ) $meta;
-			$terms = get_terms( $options['taxonomy'], $options['args'] );
-
-			$html = '';
-			// Checkbox_list
-			if ( 'checkbox_list' == $options['type'] )
-			{
-				foreach ( $terms as $term )
-				{
-					$html .= "<input type='checkbox' name='{$field['id']}[]' value='{$term->term_id}'" . checked( in_array( $term->term_id, $meta ), true, false ) . " /> {$term->name}<br/>";
-				}
-			}
-			//Checkbox Tree
-			elseif ( 'checkbox_tree' == $options['type'] )
-			{
-				$html .= self::walk_checkbox_tree($meta, $field, true);
-			}
-			// Select
-			else
-			{
-				$html .= "<select name='{$field['id']}" . ( $field['multiple'] ? "[]' multiple='multiple' style='height: auto;'" : "'" ) . ">";
-				foreach ( $terms as $term )
-				{
-					$html .= "<option value='{$term->term_id}'" . selected( in_array( $term->term_id, $meta ), true, false ) . ">{$term->name}</option>";
-				}
-				$html .= "</select>";
-			}
-
-			return $html;
-		}
-
-		/**
-		 * Walker for displaying checkboxes in treeformat
-		 *
-		 * @param $meta
-		 * @param $field
-		 * @param bool $active
-		 *
-		 * @return string
-		 */
-		static function walk_checkbox_tree( $meta, $field, $active = false )
-		{
-			$options = $field['options'];
-			$terms = get_terms( $options['taxonomy'], $options['args'] );
-			$count = count($terms);
-			$html = '';
-			$hidden = ( !$active ? 'hidden' : '' );
-			if ( $count > 0 )
-			{
-				$html = "<ul class = 'rw-taxonomy-tree {$hidden}'>";
-				foreach ( $terms as $term )
-				{
-					$html .= "<li> <input type='checkbox' name='{$field['id']}[]' value='{$term->term_id}'" . checked( in_array( $term->term_id, $meta ), true, false ) . disabled($active,false,false) . " /> {$term->name}";
-					$field['options']['args']['parent'] = $term->term_id;
-					$html .= self::walk_checkbox_tree($meta, $field, (in_array( $term->term_id, $meta))) . "</li>";
-				}
-				$html .= "</ul>";
-			}
-			return $html;
-		}
-
-		/**
-		 * Save post taxonomy
-		 * @param $post_id
-		 * @param $field
-		 * @param $old
-		 * @param $new
-		 */
-		static function save( $new, $old, $post_id, $field )
-		{
-			wp_set_post_terms( $post_id, $new, $field['options']['taxonomy'] );
-		}
-	}
-}
-
-/********************* META BOXES DEFINITION ***********************/
-
-/**
- * Prefix of meta keys (optional)
- * Wse underscore (_) at the beginning to make keys hidden
- * You also can make prefix empty to disable it
- */
-$prefix = '_';
-
-global $meta_boxes;
-
-$meta_boxes = array();
-
-// First meta box
-$meta_boxes[] = array(
-	'id' => 'personal',                   // Meta box id, unique per meta box
-	'title' => 'Personal Information',    // Meta box title
-	'pages' => array( 'post', 'slider' ), // Post types, accept custom post types as well, default is array('post'); optional
-	'context' => 'normal',                // Where the meta box appear: normal (default), advanced, side; optional
-	'priority' => 'high',                 // Order of meta box: high (default), low; optional
-
-	'fields' => array(                    // List of meta fields
-		array(
-			'name' => 'Full name',          // Field name
-			'desc' => 'Format: First Last', // Field description, optional
-			'id' => $prefix . 'fname',      // Field id, i.e. the meta key
-			'type' => 'text',               // Field type: text box
-			'std' => 'Anh Tran'             // Default value, optional
-		),
-		array(
-			'name' => 'DOB',
-			'id' => $prefix . 'dob',
-			'type' => 'date',               // File type: date
-			'format' => 'd MM, yy'          // Date format, default yy-mm-dd. Optional. See: http://goo.gl/po8vf
-		),
-		array(
-			'name' => 'Gender',
-			'id' => $prefix . 'gender',
-			'type' => 'radio',              // File type: radio box
-			'options' => array(             // Array of 'key' => 'value' pairs for radio options. Note: the 'key' is stored in meta field, not the 'value'
-				'm' => 'Male',
-				'f' => 'Female'
-			),
-			'std' => 'm',
-			'desc' => 'Need an explaination?'
-		),
-		array(
-			'name' => 'Bio',
-			'desc' => 'What\'s your professions? What you\'ve done?',
-			'id' => $prefix . 'bio',
-			'type' => 'textarea',           // File type: textarea
-			'std' => 'I\'m a WP developer and a freelancer from Vietnam.',
-			'style' => 'width: 200px; height: 100px'
-		),
-		array(
-			'name' => 'Where do you live?',
-			'id' => $prefix . 'place',
-			'type' => 'select',             // File type: select box
-			'options' => array(             // Array of 'key' => 'value' pairs for select box
-				'usa' => 'USA',
-				'vn' => 'Vietnam'
-			),
-			'multiple' => true,             // Select multiple values, optional. Default is false.
-			'std' => array( 'vn' ),         // Default value, can be string (single value) or array (for both single and multiple values)
-			'desc' => 'Select the current place, not in the past'
-		),
-		array(
-			'name' => 'About WordPress',    // File type: checkbox
-			'id' => $prefix . 'love_wp',
-			'type' => 'checkbox',
-			'desc' => 'I love WordPress',
-			'std' => 1                      // Value can be 0 or 1
-		),
-		array(
-			'name' => 'Categories',
-			'id' => $prefix . 'cats',
-			'type' => 'taxonomy',           // File type: taxonomy
-			'options' => array(
-				'taxonomy' => 'category',   // Taxonomy name
-				'type' => 'checkbox_list',  // How to show taxonomy: 'checkbox_list' (default) or 'select'. Optional
-				'args' => array(),         // Additional arguments for get_terms() function
-			),
-			'desc' => 'Choose One Category'
-		)
-	)
-);
-
-// Second meta box
-$meta_boxes[] = array(
-	'id' => 'additional',
-	'title' => 'Additional Information',
-	'pages' => array( 'post', 'film', 'slider' ),
-
-	'fields' => array(
-		array(
-			'name' => 'Your thoughts about Deluxe Blog Tips',
-			'id' => $prefix . 'thoughts',
-			'type' => 'wysiwyg',             // Field type: WYSIWYG editor
-			'std' => '<b>It\'s great!</b>',
-			'desc' => 'Do you think so?',
-		),
-		array(
-			'name' => 'Upload your source code',
-			'desc' => 'Any modified code, or extending code',
-			'id' => $prefix . 'code',
-			'type' => 'file'                 // Field type: file upload
-		),
-		array(
-			'name' => 'Screenshots',
-			'desc' => 'Screenshots of problems, warnings, etc.',
-			'id' => $prefix . 'screenshot',
-			'type' => 'image'                // Field type: image upload
-		),
-		array(
-			'name' => 'Screenshots (plupload)',
-			'desc' => 'Screenshots of problems, warnings, etc.',
-			'id' => $prefix . 'screenshot',
-			'type' => 'plupload_image'                // Field type: plupload image upload
-		)
-	)
-);
-
-// Third meta box
-$meta_boxes[] = array(
-	'id' => 'survey',
-	'title' => 'Survey',
-	'pages' => array( 'post', 'slider', 'page' ),
-
-	'fields' => array(
-		array(
-			'name' => 'Your favorite color',
-			'id' => $prefix . 'color',
-			'type' => 'color'                // Field type: color
-		),
-		array(
-			'name' => 'Your hobby',
-			'id' => $prefix . 'hobby',
-			'type' => 'checkbox_list',       // Field type: checkbox list
-			'options' => array(              // Options of checkboxes, in format 'key' => 'value'
-				'reading' => 'Books',
-				'sport' => 'Gym, Boxing'
-			),
-			'desc' => 'What do you do in free time?'
-		),
-		array(
-			'name' => 'When do you get up?',
-			'id' => $prefix . 'getdown',
-			'type' => 'time',                // Field type: time
-			'format' => 'hh:mm:ss'           // Time format, default hh:mm. Optional. See: http://goo.gl/hXHWz
-		)
-	)
-);
-
-// Hook to 'admin_init' to make sure the meta box class is loaded before (in case using the meta box class in another plugin)
-// This is also helpful for some conditionals like checking page template, categories, etc.
-add_action( 'admin_init', 'your_prefix_register_meta_boxes' );
+add_filter( 'rwmb_meta_boxes', 'your_prefix_register_meta_boxes' );
 
 /**
  * Register meta boxes
  *
- * @return void
+ * Remember to change "your_prefix" to actual prefix in your project
+ *
+ * @param array $meta_boxes List of meta boxes
+ *
+ * @return array
  */
-function your_prefix_register_meta_boxes()
+function your_prefix_register_meta_boxes( $meta_boxes )
 {
-	global $meta_boxes;
+	/**
+	 * prefix of meta keys (optional)
+	 * Use underscore (_) at the beginning to make keys hidden
+	 * Alt.: You also can make prefix empty to disable it
+	 */
+	// Better has an underscore as last sign
+	$prefix = 'your_prefix_';
 
-	// Make sure there's no errors when the plugin is deactivated or during upgrade
-	if ( class_exists( 'RW_Meta_Box' ) )
-	{
-		foreach ( $meta_boxes as $meta_box )
-		{
-			new RW_Meta_Box( $meta_box );
-		}
-	}
+	// 1st meta box
+	$meta_boxes[] = array(
+		// Meta box id, UNIQUE per meta box. Optional since 4.1.5
+		'id'         => 'standard',
+
+		// Meta box title - Will appear at the drag and drop handle bar. Required.
+		'title'      => __( 'Standard Fields', 'your-prefix' ),
+
+		// Post types, accept custom post types as well - DEFAULT is 'post'. Can be array (multiple post types) or string (1 post type). Optional.
+		'post_types' => array( 'post', 'page' ),
+
+		// Where the meta box appear: normal (default), advanced, side. Optional.
+		'context'    => 'normal',
+
+		// Order of meta box: high (default), low. Optional.
+		'priority'   => 'high',
+
+		// Auto save: true, false (default). Optional.
+		'autosave'   => true,
+
+		// List of meta fields
+		'fields'     => array(
+			// TEXT
+			array(
+				// Field name - Will be used as label
+				'name'  => __( 'Text', 'your-prefix' ),
+				// Field ID, i.e. the meta key
+				'id'    => "{$prefix}text",
+				// Field description (optional)
+				'desc'  => __( 'Text description', 'your-prefix' ),
+				'type'  => 'text',
+				// Default value (optional)
+				'std'   => __( 'Default text value', 'your-prefix' ),
+				// CLONES: Add to make the field cloneable (i.e. have multiple value)
+				'clone' => true,
+			),
+			// CHECKBOX
+			array(
+				'name' => __( 'Checkbox', 'your-prefix' ),
+				'id'   => "{$prefix}checkbox",
+				'type' => 'checkbox',
+				// Value can be 0 or 1
+				'std'  => 1,
+			),
+			// RADIO BUTTONS
+			array(
+				'name'    => __( 'Radio', 'your-prefix' ),
+				'id'      => "{$prefix}radio",
+				'type'    => 'radio',
+				// Array of 'value' => 'Label' pairs for radio options.
+				// Note: the 'value' is stored in meta field, not the 'Label'
+				'options' => array(
+					'value1' => __( 'Label1', 'your-prefix' ),
+					'value2' => __( 'Label2', 'your-prefix' ),
+				),
+			),
+			// SELECT BOX
+			array(
+				'name'        => __( 'Select', 'your-prefix' ),
+				'id'          => "{$prefix}select",
+				'type'        => 'select',
+				// Array of 'value' => 'Label' pairs for select box
+				'options'     => array(
+					'value1' => __( 'Label1', 'your-prefix' ),
+					'value2' => __( 'Label2', 'your-prefix' ),
+				),
+				// Select multiple values, optional. Default is false.
+				'multiple'    => false,
+				'std'         => 'value2',
+				'placeholder' => __( 'Select an Item', 'your-prefix' ),
+			),
+			// HIDDEN
+			array(
+				'id'   => "{$prefix}hidden",
+				'type' => 'hidden',
+				// Hidden field must have predefined value
+				'std'  => __( 'Hidden value', 'your-prefix' ),
+			),
+			// PASSWORD
+			array(
+				'name' => __( 'Password', 'your-prefix' ),
+				'id'   => "{$prefix}password",
+				'type' => 'password',
+			),
+			// TEXTAREA
+			array(
+				'name' => __( 'Textarea', 'your-prefix' ),
+				'desc' => __( 'Textarea description', 'your-prefix' ),
+				'id'   => "{$prefix}textarea",
+				'type' => 'textarea',
+				'cols' => 20,
+				'rows' => 3,
+			),
+		),
+		'validation' => array(
+			'rules'    => array(
+				"{$prefix}password" => array(
+					'required'  => true,
+					'minlength' => 7,
+				),
+			),
+			// optional override of default jquery.validate messages
+			'messages' => array(
+				"{$prefix}password" => array(
+					'required'  => __( 'Password is required', 'your-prefix' ),
+					'minlength' => __( 'Password must be at least 7 characters', 'your-prefix' ),
+				),
+			)
+		)
+	);
+
+	// 2nd meta box
+	$meta_boxes[] = array(
+		'title'  => __( 'Advanced Fields', 'your-prefix' ),
+
+		'fields' => array(
+			// HEADING
+			array(
+				'type' => 'heading',
+				'name' => __( 'Heading', 'your-prefix' ),
+				'id'   => 'fake_id', // Not used but needed for plugin
+				'desc' => __( 'Optional description for this heading', 'your-prefix' ),
+			),
+			// SLIDER
+			array(
+				'name'       => __( 'Slider', 'your-prefix' ),
+				'id'         => "{$prefix}slider",
+				'type'       => 'slider',
+
+				// Text labels displayed before and after value
+				'prefix'     => __( '$', 'your-prefix' ),
+				'suffix'     => __( ' USD', 'your-prefix' ),
+
+				// jQuery UI slider options. See here http://api.jqueryui.com/slider/
+				'js_options' => array(
+					'min'  => 10,
+					'max'  => 255,
+					'step' => 5,
+				),
+			),
+			// NUMBER
+			array(
+				'name' => __( 'Number', 'your-prefix' ),
+				'id'   => "{$prefix}number",
+				'type' => 'number',
+
+				'min'  => 0,
+				'step' => 5,
+			),
+			// DATE
+			array(
+				'name'       => __( 'Date picker', 'your-prefix' ),
+				'id'         => "{$prefix}date",
+				'type'       => 'date',
+
+				// jQuery date picker options. See here http://api.jqueryui.com/datepicker
+				'js_options' => array(
+					'appendText'      => __( '(yyyy-mm-dd)', 'your-prefix' ),
+					'dateFormat'      => __( 'yy-mm-dd', 'your-prefix' ),
+					'changeMonth'     => true,
+					'changeYear'      => true,
+					'showButtonPanel' => true,
+				),
+			),
+			// DATETIME
+			array(
+				'name'       => __( 'Datetime picker', 'your-prefix' ),
+				'id'         => $prefix . 'datetime',
+				'type'       => 'datetime',
+
+				// jQuery datetime picker options.
+				// For date options, see here http://api.jqueryui.com/datepicker
+				// For time options, see here http://trentrichardson.com/examples/timepicker/
+				'js_options' => array(
+					'stepMinute'     => 15,
+					'showTimepicker' => true,
+				),
+			),
+			// TIME
+			array(
+				'name'       => __( 'Time picker', 'your-prefix' ),
+				'id'         => $prefix . 'time',
+				'type'       => 'time',
+
+				// jQuery datetime picker options.
+				// For date options, see here http://api.jqueryui.com/datepicker
+				// For time options, see here http://trentrichardson.com/examples/timepicker/
+				'js_options' => array(
+					'stepMinute' => 5,
+					'showSecond' => true,
+					'stepSecond' => 10,
+				),
+			),
+			// COLOR
+			array(
+				'name' => __( 'Color picker', 'your-prefix' ),
+				'id'   => "{$prefix}color",
+				'type' => 'color',
+			),
+			// CHECKBOX LIST
+			array(
+				'name'    => __( 'Checkbox list', 'your-prefix' ),
+				'id'      => "{$prefix}checkbox_list",
+				'type'    => 'checkbox_list',
+				// Options of checkboxes, in format 'value' => 'Label'
+				'options' => array(
+					'value1' => __( 'Label1', 'your-prefix' ),
+					'value2' => __( 'Label2', 'your-prefix' ),
+				),
+			),
+			// AUTOCOMPLETE
+			array(
+				'name'    => __( 'Autocomplete', 'your-prefix' ),
+				'id'      => "{$prefix}autocomplete",
+				'type'    => 'autocomplete',
+				// Options of autocomplete, in format 'value' => 'Label'
+				'options' => array(
+					'value1' => __( 'Label1', 'your-prefix' ),
+					'value2' => __( 'Label2', 'your-prefix' ),
+				),
+				// Input size
+				'size'    => 30,
+				// Clone?
+				'clone'   => false,
+			),
+			// EMAIL
+			array(
+				'name' => __( 'Email', 'your-prefix' ),
+				'id'   => "{$prefix}email",
+				'desc' => __( 'Email description', 'your-prefix' ),
+				'type' => 'email',
+				'std'  => 'name@email.com',
+			),
+			// RANGE
+			array(
+				'name' => __( 'Range', 'your-prefix' ),
+				'id'   => "{$prefix}range",
+				'desc' => __( 'Range description', 'your-prefix' ),
+				'type' => 'range',
+				'min'  => 0,
+				'max'  => 100,
+				'step' => 5,
+				'std'  => 0,
+			),
+			// URL
+			array(
+				'name' => __( 'URL', 'your-prefix' ),
+				'id'   => "{$prefix}url",
+				'desc' => __( 'URL description', 'your-prefix' ),
+				'type' => 'url',
+				'std'  => 'http://google.com',
+			),
+			// OEMBED
+			array(
+				'name' => __( 'oEmbed', 'your-prefix' ),
+				'id'   => "{$prefix}oembed",
+				'desc' => __( 'oEmbed description', 'your-prefix' ),
+				'type' => 'oembed',
+			),
+			// SELECT ADVANCED BOX
+			array(
+				'name'        => __( 'Select', 'your-prefix' ),
+				'id'          => "{$prefix}select_advanced",
+				'type'        => 'select_advanced',
+				// Array of 'value' => 'Label' pairs for select box
+				'options'     => array(
+					'value1' => __( 'Label1', 'your-prefix' ),
+					'value2' => __( 'Label2', 'your-prefix' ),
+				),
+				// Select multiple values, optional. Default is false.
+				'multiple'    => false,
+				// 'std'         => 'value2', // Default value, optional
+				'placeholder' => __( 'Select an Item', 'your-prefix' ),
+			),
+			// TAXONOMY
+			array(
+				'name'    => __( 'Taxonomy', 'your-prefix' ),
+				'id'      => "{$prefix}taxonomy",
+				'type'    => 'taxonomy',
+				'options' => array(
+					// Taxonomy name
+					'taxonomy' => 'category',
+					// How to show taxonomy: 'checkbox_list' (default) or 'checkbox_tree', 'select_tree', select_advanced or 'select'. Optional
+					'type'     => 'checkbox_list',
+					// Additional arguments for get_terms() function. Optional
+					'args'     => array()
+				),
+			),
+			// POST
+			array(
+				'name'        => __( 'Posts (Pages)', 'your-prefix' ),
+				'id'          => "{$prefix}pages",
+				'type'        => 'post',
+				// Post type
+				'post_type'   => 'page',
+				// Field type, either 'select' or 'select_advanced' (default)
+				'field_type'  => 'select_advanced',
+				'placeholder' => __( 'Select an Item', 'your-prefix' ),
+				// Query arguments (optional). No settings means get all published posts
+				'query_args'  => array(
+					'post_status'    => 'publish',
+					'posts_per_page' => - 1,
+				)
+			),
+			// WYSIWYG/RICH TEXT EDITOR
+			array(
+				'name'    => __( 'WYSIWYG / Rich Text Editor', 'your-prefix' ),
+				'id'      => "{$prefix}wysiwyg",
+				'type'    => 'wysiwyg',
+				// Set the 'raw' parameter to TRUE to prevent data being passed through wpautop() on save
+				'raw'     => false,
+				'std'     => __( 'WYSIWYG default value', 'your-prefix' ),
+
+				// Editor settings, see wp_editor() function: look4wp.com/wp_editor
+				'options' => array(
+					'textarea_rows' => 4,
+					'teeny'         => true,
+					'media_buttons' => false,
+				),
+			),
+			// DIVIDER
+			array(
+				'type' => 'divider',
+				'id'   => 'fake_divider_id', // Not used, but needed
+			),
+			// FILE UPLOAD
+			array(
+				'name' => __( 'File Upload', 'your-prefix' ),
+				'id'   => "{$prefix}file",
+				'type' => 'file',
+			),
+			// FILE ADVANCED (WP 3.5+)
+			array(
+				'name'             => __( 'File Advanced Upload', 'your-prefix' ),
+				'id'               => "{$prefix}file_advanced",
+				'type'             => 'file_advanced',
+				'max_file_uploads' => 4,
+				'mime_type'        => 'application,audio,video', // Leave blank for all file types
+			),
+			// IMAGE UPLOAD
+			array(
+				'name' => __( 'Image Upload', 'your-prefix' ),
+				'id'   => "{$prefix}image",
+				'type' => 'image',
+			),
+			// THICKBOX IMAGE UPLOAD (WP 3.3+)
+			array(
+				'name' => __( 'Thickbox Image Upload', 'your-prefix' ),
+				'id'   => "{$prefix}thickbox",
+				'type' => 'thickbox_image',
+			),
+			// PLUPLOAD IMAGE UPLOAD (WP 3.3+)
+			array(
+				'name'             => __( 'Plupload Image Upload', 'your-prefix' ),
+				'id'               => "{$prefix}plupload",
+				'type'             => 'plupload_image',
+				'max_file_uploads' => 4,
+			),
+			// IMAGE ADVANCED (WP 3.5+)
+			array(
+				'name'             => __( 'Image Advanced Upload', 'your-prefix' ),
+				'id'               => "{$prefix}imgadv",
+				'type'             => 'image_advanced',
+				'max_file_uploads' => 4,
+			),
+			// BUTTON
+			array(
+				'id'   => "{$prefix}button",
+				'type' => 'button',
+				'name' => ' ', // Empty name will "align" the button to all field inputs
+			),
+		)
+	);
+
+	return $meta_boxes;
 }
+
+

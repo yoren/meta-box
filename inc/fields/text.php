@@ -1,26 +1,49 @@
 <?php
+// Prevent loading this file directly
+defined( 'ABSPATH' ) || exit;
 
-if ( ! class_exists( 'RWMB_Text_Field' ) ) 
+class RWMB_Text_Field extends RWMB_Input_Field
 {
-	class RWMB_Text_Field 
+	/**
+	 * Normalize parameters for field
+	 *
+	 * @param array $field
+	 *
+	 * @return array
+	 */
+	static function normalize( $field )
 	{
-		/**
-		 * Get field HTML
-		 *
-		 * @param string $html
-		 * @param mixed  $meta
-		 * @param array  $field
-		 *
-		 * @return string
-		 */
-		static function html( $html, $meta, $field ) 
-		{
-			$val   = " value='{$meta}'";
-			$name  = " name='{$field['id']}'";
-			$id    = " id='{$field['id']}'";
-			$html .= "<input type='text' class='rwmb-text'{$name}{$id}{$val} size='30' />";
+		$field = parent::normalize( $field );
 
-			return $html;
-		}
+		$field = wp_parse_args( $field, array(
+			'size'        => 30,
+			'maxlength'   => false,
+			'pattern'     => false,
+		) );
+
+		return $field;
+	}
+	
+	/**
+	 * Get the attributes for a field
+	 *
+	 * @param array $field
+	 * @param mixed value
+	 *
+	 * @return array
+	 */
+	static function get_attributes( $field, $value = null )
+	{
+		$attributes = parent::get_attributes( $field, $value );
+		$attributes = wp_parse_args( $attributes, array(
+			'size'        => $field['size'],
+			'maxlength'   => $field['maxlength'],
+			'pattern'     => $field['pattern'],
+			'placeholder' => $field['placeholder'],
+		) );
+		
+		$attributes['type'] = 'text';
+		
+		return $attributes;
 	}
 }
