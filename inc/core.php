@@ -45,27 +45,30 @@ class RWMB_Core
 	}
 
 	/**
-	 * Register meta boxes via a filter.
+	 * Register meta boxes.
 	 * Advantages:
 	 * - prevents incorrect hook.
-	 * - prevents duplicated global variables.
-	 * - allows users to remove/hide registered meta boxes.
 	 * - no need to check for class existences.
 	 */
 	public function register_meta_boxes()
 	{
-		$meta_boxes = apply_filters( 'rwmb_meta_boxes', array() );
-
-		// Prevent errors showing if invalid value is returned from the filter above
-		if ( empty( $meta_boxes ) || ! is_array( $meta_boxes ) )
-		{
-			return;
-		}
-
+		$meta_boxes = self::get_meta_boxes();
 		foreach ( $meta_boxes as $meta_box )
 		{
 			new RW_Meta_Box( $meta_box );
 		}
+	}
+
+	/**
+	 * Get registered meta boxes via a filter.
+	 * Advantages:
+	 * - prevents duplicated global variables.
+	 * - allows users to remove/hide registered meta boxes.
+	 */
+	static public function get_meta_boxes()
+	{
+		$meta_boxes = apply_filters( 'rwmb_meta_boxes', array() );
+		return empty( $meta_boxes ) || ! is_array( $meta_boxes ) ? array() : $meta_boxes;
 	}
 
 	/**
@@ -86,5 +89,44 @@ class RWMB_Core
 		{
 			delete_post_meta( $post->ID, '_wp_page_template' );
 		}
+	}
+
+	/**
+	 * Apply various filters based on field type, id.
+	 * Filters:
+	 * - rwmb_{$name}
+	 * - rwmb_{$field['type']}_{$name}
+	 * - rwmb_{$field['id']}_{$name}
+	 * @return mixed
+	 */
+	public static function filter()
+	{
+		$args = func_get_args();
+
+		// 3 first params must be: filter name, value, field. Other params will be used for filters.
+		$name  = array_shift( $args );
+		$value = array_shift( $args );
+		$field = array_shift( $args );
+
+		// List of filters
+		$filters = array(
+			'rwmb_' . $name,
+			'rwmb_' . $field['type'] . '_' . $name,
+		);
+		if ( isset( $field['id'] ) )
+		{
+			$filters[] = 'rwmb_' . $field['id'] . '_' . $name;
+		}
+
+		// Filter params: value, field, other params. Note: value is changed after each run.
+		array_unshift( $args, $field );
+		foreach ( $filters as $filter )
+		{
+			$filter_args = $args;
+			array_unshift( $filter_args, $value );
+			$value = apply_filters_ref_array( $filter, $filter_args );
+		}
+
+		return $value;
 	}
 }

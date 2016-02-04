@@ -1,0 +1,20 @@
+engines:
+  phpmd:
+    enabled: true
+  csslint:
+    enabled: true
+  eslint:
+    enabled: true
+  fixme:
+    enabled: true
+  phpcodesniffer:
+    enabled: true
+languages:
+  JavaScript: true
+  PHP: true
+exclude_paths:
+- tests/**/*
+- demo/**/*
+- js/*.min.js
+- js/jqueryui/**/*
+- js/select2/**/*

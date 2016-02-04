@@ -7,24 +7,11 @@ jQuery( function ( $ )
 	// Object holds all methods related to fields' index when clone
 	var cloneIndex = {
 		/**
-		 * Reset index for fields in .rwmb-clone
-		 * Must be done when add/remove or sort clone
-		 * @param $container A div container which has all fields
-		 */
-		reset      : function ( $container )
-		{
-			var index = 0;
-			$container.find( '.rwmb-clone' ).each( function ()
-			{
-				cloneIndex.set( $( this ), index++ );
-			} );
-		},
-		/**
 		 * Set index for fields in a .rwmb-clone
 		 * @param $clone .rwmb-clone element
 		 * @param index Index value
 		 */
-		set        : function ( $clone, index )
+		set: function ( $clone, index )
 		{
 			$clone.find( ':input[class|="rwmb"]' ).each( function ()
 			{
@@ -43,8 +30,6 @@ jQuery( function ( $ )
 				{
 					$field.attr( 'id', cloneIndex.replace( index, id, '_' ) );
 				}
-
-				$field.trigger( 'set' );
 			} );
 
 			// Address button's value attribute
@@ -55,6 +40,7 @@ jQuery( function ( $ )
 				$address.attr( 'value', cloneIndex.replace( index, value, '_' ) );
 			}
 		},
+
 		/**
 		 * Replace an attribute of a field with updated index
 		 * @param index New index value
@@ -64,7 +50,7 @@ jQuery( function ( $ )
 		 * @param alternative Check if attribute does not contain any integer, will reset the attribute?
 		 * @return string
 		 */
-		replace    : function ( index, value, before, after, alternative )
+		replace: function ( index, value, before, after, alternative )
 		{
 			before = before || '';
 			after = after || '';
@@ -75,6 +61,7 @@ jQuery( function ( $ )
 
 			return regex.test( value ) ? value.replace( regex, newValue ) : (alternative ? value + newValue : value );
 		},
+
 		/**
 		 * Helper function to escape string in regular expression
 		 * @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
@@ -84,6 +71,18 @@ jQuery( function ( $ )
 		escapeRegex: function ( string )
 		{
 			return string.replace( /[.*+?^${}()|[\]\\]/g, "\\$&" );
+		},
+
+		/**
+		 * Helper function to create next index for clones
+		 * @param $container .rwmb-input container
+		 * @return integer
+		 */
+		nextIndex: function ( $container )
+		{
+			var nextIndex = $container.data( 'next-index' );
+			$container.data( 'next-index', nextIndex + 1 );
+			return nextIndex;
 		}
 	};
 
@@ -96,7 +95,8 @@ jQuery( function ( $ )
 	{
 		var $last = $container.children( '.rwmb-clone:last' ),
 			$clone = $last.clone(),
-			$input = $clone.find( ':input[class|="rwmb"]' );
+			$input = $clone.find( ':input[class|="rwmb"]' ),
+			nextIndex = cloneIndex.nextIndex( $container );
 
 		// Reset value for fields
 		$input.each( function ()
@@ -119,13 +119,13 @@ jQuery( function ( $ )
 			}
 		} );
 
+		// Insert Clone
 		$clone.insertAfter( $last );
-
-		// Reset fields index. Must run before trigger clone event.
-		cloneIndex.reset( $container );
+		// Set fields index. Must run before trigger clone event.
+		cloneIndex.set( $clone, nextIndex );
 
 		// Trigger custom clone event
-		$input.trigger( 'clone' );
+		$input.trigger( 'clone', nextIndex );
 	}
 
 	/**
@@ -138,7 +138,7 @@ jQuery( function ( $ )
 	function toggleRemoveButtons( $container )
 	{
 		var $button = $container.find( '.remove-clone' );
-		$button[$button.length < 2 ? 'hide' : 'show']();
+		$button.toggle( $button.length > 1 );
 	}
 
 	/**
@@ -155,7 +155,7 @@ jQuery( function ( $ )
 			maxClone = parseInt( $container.data( 'max-clone' ) ),
 			numClone = $container.find( '.rwmb-clone' ).length;
 
-		$button[isNaN( maxClone ) || (maxClone && numClone < maxClone) ? 'show' : 'hide']();
+		$button.toggle( isNaN( maxClone ) || ( maxClone && numClone < maxClone ) );
 	}
 
 	/**
@@ -250,10 +250,9 @@ jQuery( function ( $ )
 			//Trigger custom clone event
 			textarea.trigger( 'clone' );
 		}
-
 	}
 
-	$( '#poststuff' )
+	$( '#wpbody-content' )
 	// Add clones
 		.on( 'click', '.add-clone', function ( e )
 		{
@@ -288,7 +287,6 @@ jQuery( function ( $ )
 			}
 
 			$this.parent().trigger( 'remove' ).remove();
-			cloneIndex.reset( $container );
 			toggleRemoveButtons( $container );
 			toggleAddButton( $container )
 		} );
@@ -296,23 +294,20 @@ jQuery( function ( $ )
 	$( '.rwmb-input' ).each( function ()
 	{
 		var $container = $( this );
-		cloneIndex.reset( $container );
 		toggleRemoveButtons( $container );
 		toggleAddButton( $container );
 
-		$container.sortable( {
-			handle     : '.rwmb-clone-icon',
-			placeholder: ' rwmb-clone rwmb-clone-placeholder',
-			items      : '.rwmb-clone',
-			start      : function ( event, ui )
-			{
-				// Make the placeholder has the same height as dragged item
-				ui.placeholder.height( ui.item.height() );
-			},
-			update     : function ()
-			{
-				cloneIndex.reset( $container );
-			}
-		} );
+		$container
+			.data( 'next-index', $container.children( '.rwmb-clone' ).length )
+			.sortable( {
+				handle     : '.rwmb-clone-icon',
+				placeholder: ' rwmb-clone rwmb-clone-placeholder',
+				items      : '.rwmb-clone',
+				start      : function ( event, ui )
+				{
+					// Make the placeholder has the same height as dragged item
+					ui.placeholder.height( ui.item.height() );
+				}
+			} );
 	} );
 } );

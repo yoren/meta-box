@@ -1,13 +1,11 @@
 <?php
-// Prevent loading this file directly
-defined( 'ABSPATH' ) || exit;
-
+/**
+ * oEmbed field class.
+ */
 class RWMB_OEmbed_Field extends RWMB_URL_Field
 {
 	/**
 	 * Enqueue scripts and styles
-	 *
-	 * @return void
 	 */
 	static function admin_enqueue_scripts()
 	{
@@ -17,8 +15,6 @@ class RWMB_OEmbed_Field extends RWMB_URL_Field
 
 	/**
 	 * Add actions
-	 *
-	 * @return void
 	 */
 	static function add_actions()
 	{
@@ -27,12 +23,10 @@ class RWMB_OEmbed_Field extends RWMB_URL_Field
 
 	/**
 	 * Ajax callback for returning oEmbed HTML
-	 *
-	 * @return void
 	 */
 	static function wp_ajax_get_embed()
 	{
-		$url = isset( $_POST['url'] ) ? $_POST['url'] : '';
+		$url = (string) filter_input( INPUT_POST, 'url', FILTER_SANITIZE_URL );
 		wp_send_json_success( self::get_embed( $url ) );
 	}
 
@@ -40,7 +34,6 @@ class RWMB_OEmbed_Field extends RWMB_URL_Field
 	 * Get embed html from url
 	 *
 	 * @param string $url
-	 *
 	 * @return string
 	 */
 	static function get_embed( $url )
@@ -62,19 +55,17 @@ class RWMB_OEmbed_Field extends RWMB_URL_Field
 	 *
 	 * @param mixed $meta
 	 * @param array $field
-	 *
 	 * @return string
 	 */
 	static function html( $meta, $field )
 	{
+		$attributes = self::get_attributes( $field, $meta );
 		return sprintf(
-			'<input type="url" class="rwmb-oembed" name="%s" id="%s" value="%s" size="%s">
+			'<input %s>
 			<a href="#" class="show-embed button">%s</a>
 			<span class="spinner"></span>
 			<div class="embed-code">%s</div>',
-			$field['field_name'],
-			$field['id'],
-			$meta,
+			self::render_attributes( $attributes ),
 			$field['size'],
 			__( 'Preview', 'meta-box' ),
 			$meta ? self::get_embed( $meta ) : ''
