@@ -28,7 +28,7 @@ class RWMB_Loader
 	public function constants()
 	{
 		// Script version, used to add version for scripts and styles
-		define( 'RWMB_VER', '4.7.3' );
+		define( 'RWMB_VER', '4.8.1' );
 
 		list( $path, $url ) = self::get_path();
 
@@ -124,10 +124,15 @@ class RWMB_Loader
 		// Plugin core
 		new RWMB_Core;
 
-		// Validation module
-		new RWMB_Validation;
-
-		// Public functions
-		require RWMB_INC_DIR . 'functions.php';
+		if ( is_admin() )
+		{
+			// Validation module
+			new RWMB_Validation;
+		}
+		else
+		{
+			// Public functions
+			require RWMB_INC_DIR . 'functions.php';
+		}
 	}
 }
