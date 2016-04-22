@@ -26,6 +26,7 @@
 .rwmb-label.required > span {
 	color: #c00;
 	font-weight: bold;
+	margin-left: 3px;
 }
 
 /* 75% if field has label, 100% if no label */
@@ -78,23 +79,17 @@
 	width: 15px;
 	vertical-align: top;
 	display: inline-block;
+	position: absolute;
+	left: 0;
+	top: 0;
 }
 .rwmb-clone-placeholder {
 	background: #fcf8e3;
 	border: 1px solid #faebcc;
 	display: block;
 }
-
-/* Specific cloning styles for fields */
-.rwmb-checkbox_list-clone > label:not(:first-of-type),
-.rwmb-select-clone > .rwmb-select-all-none,
-.rwmb-select_advanced-clone > .rwmb-select-all-none {
+.rwmb-sort-clone {
 	padding-left: 15px;
-}
-
-/* Fix empty block below admin footer (issue #24) */
-#ui-datepicker-div {
-	display: none;
 }
 
 /* jQuery validation */
@@ -105,7 +100,7 @@ label.error {
 input.error,
 textarea.error,
 select.error {
-	border: #c00 solid 1px !important;
+	border-color: #c00 !important;
 	background: #ffebe8 !important;
 }
 
